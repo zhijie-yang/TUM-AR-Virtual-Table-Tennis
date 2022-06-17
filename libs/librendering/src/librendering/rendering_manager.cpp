@@ -1,7 +1,15 @@
 #include "librendering/rendering_manager.hpp"
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdlrenderer.h"
+
 #include <iostream>
 #include <SDL.h>
+
+#if !SDL_VERSION_ATLEAST(2,0,17)
+#error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
+#endif
 
 using namespace librendering;
 
@@ -63,14 +71,25 @@ public:
             return 1;
         }
 
-        if (SDL_CreateWindowAndRenderer(0, 0, 0, &_window, &_renderer) < 0)
+        // Setup window
+        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        _window = SDL_CreateWindow("Dear ImGui+SDL2+SDL_Renderer+OpenCV", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, settings.window_width, settings.window_height, window_flags);
+        if (_window == NULL)
         {
-            std::cerr << "Error creating window or renderer: " << SDL_GetError() << std::endl;
+            std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
             SDL_Quit();
             return 1;
         }
 
-        SDL_SetWindowSize(_window, 800, 480);
+        // Setup SDL_Renderer instance
+        _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+        if (_renderer == NULL)
+        {
+            std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
+            SDL_DestroyWindow(_window);
+            SDL_Quit();
+            return 1;
+        }
 
         _texture = SDL_CreateTexture(
             _renderer,
@@ -79,6 +98,12 @@ public:
             settings.frame_width,
             settings.frame_height
         );
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        ImGui_ImplSDL2_InitForSDLRenderer(_window, _renderer);
+        ImGui_ImplSDLRenderer_Init(_renderer);
 
         std::cout << "Hot keys:" << std::endl;
         std::cout << "\tESC - quit the program" << std::endl;
@@ -91,6 +116,7 @@ public:
     {
         while (SDL_PollEvent(&e))
         {
+            ImGui_ImplSDL2_ProcessEvent(&e);
             switch (e.type)
             {
             case SDL_QUIT:
@@ -112,8 +138,30 @@ public:
             }
         }
 
+        // Start the Dear ImGui frame
+        ImGui_ImplSDLRenderer_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        {
+            ImGui::Begin("Main Menu");
+
+            ImGui::Text("Main Menu");
+
+            if (ImGui::Button("Cool")) {
+                //
+            }
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+            ImGui::End();
+        }
+
+        // Rendering
+        ImGui::Render();
         SDL_RenderClear(_renderer);
         SDL_RenderCopy(_renderer, _texture, NULL, NULL);
+        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(_renderer);
 
         SDL_Delay(10);
@@ -123,6 +171,11 @@ public:
 
 	int term()
     {
+        // Cleanup
+        ImGui_ImplSDLRenderer_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+
         SDL_DestroyTexture(_texture);
 
         SDL_DestroyRenderer(_renderer);
