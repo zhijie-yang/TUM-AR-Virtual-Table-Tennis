@@ -12,6 +12,13 @@ Components:
 
 ## Usage
 
+Clone the project:
+```bash
+git clone https://gitlab.com/mcmikecreations/virtualtennis.git
+cd virtualtennis/
+git submodule update --init --recursive
+```
+
 Create the `build` directory and configure the build system:
 
 ```bash
