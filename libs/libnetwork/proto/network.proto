@@ -1,0 +1,43 @@
+message PlayerInfo {
+    uint32 player_id = 1;
+    string player_ame = 2;
+}
+
+// 4x4 row major transform matrix that tranforms 3d points from one frame to
+// another.
+message Transform{
+    repeated double transform = 1;
+}
+
+message Velocity {
+    // Velocity in m/s.
+    float v_x = 1;
+    float v_y = 2;
+    float v_z = 3;
+
+    // Angular velocity in rad/s.
+    double w_x = 4;
+    double w_y = 5;
+    double w_z = 6;
+}
+
+message BallStatus{
+    uint32 ball_id = 1;
+    Transform pose = 2;
+    Velocity velocity = 3;
+}
+
+message ServerBroadcast {
+    string ip_address = 1;
+    optional string host_name = 2;
+}
+
+message ClientConnectionRequest {
+    string server_ip_address = 1;
+    optional uint32 port_nummber
+}
+
+message ClientConnectionReponse {
+    bool is_success = 1;
+    optional string respond = 2;
+}
