@@ -1,6 +1,6 @@
 message PlayerInfo {
     uint32 player_id = 1;
-    string player_ame = 2;
+    string player_name = 2;
 }
 
 // 4x4 row major transform matrix that tranforms 3d points from one frame to
@@ -21,10 +21,16 @@ message Velocity {
     double w_z = 6;
 }
 
-message BallStatus{
+message BallStatus {
     uint32 ball_id = 1;
     Transform pose = 2;
     Velocity velocity = 3;
+}
+
+message RacketStatus {
+    uint32 player_id = 1;
+    Transform pose = 2;
+    optional Velocity velocity = 3;
 }
 
 message ServerBroadcast {
@@ -34,7 +40,7 @@ message ServerBroadcast {
 
 message ClientConnectionRequest {
     string server_ip_address = 1;
-    optional uint32 port_nummber
+    optional uint32 port_number = 2;
 }
 
 message ClientConnectionReponse {
