@@ -27,10 +27,27 @@ message BallStatus {
     Velocity velocity = 3;
 }
 
+message BallStatusResponse {
+    bool success = 1;
+}
+
 message RacketStatus {
     uint32 player_id = 1;
     Transform pose = 2;
     optional Velocity velocity = 3;
+}
+
+message RacketStatusReponse {
+    bool success = 1;
+}
+
+message ScoreBoard {
+    uint32 player_1_score = 1;
+    uint32 player_2_score = 2;
+}
+
+message ScoreBoardResponse {
+    bool success = 1;
 }
 
 message ServerBroadcast {
@@ -40,7 +57,8 @@ message ServerBroadcast {
 
 message ClientConnectionRequest {
     string server_ip_address = 1;
-    optional uint32 port_number = 2;
+    PlayerInfo player_info = 2;
+    optional uint32 port_number = 3;
 }
 
 message ClientConnectionReponse {
