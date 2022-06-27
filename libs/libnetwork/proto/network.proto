@@ -6,13 +6,13 @@ package libnetwork;
 
 service VirtualTennis {
     rpc SendBallStatus (BallStatus) returns (BallStatusResponse) {}
-    rpc SendRacketStatus (RacketStatus) returns (RacketStatusReponse) {}
+    rpc SendRacketStatus (RacketStatus) returns (RacketStatusResponse) {}
     rpc SendScoreBoard (ScoreBoard) returns (ScoreBoardResponse) {}
-    rpc ChangeTurn (ChangeTurnRequest) returns (ChangeTurnReponse) {}
+    rpc ChangeTurn (ChangeTurnRequest) returns (ChangeTurnResponse) {}
     rpc StartNewRound (StartNewRoundRequest) returns (StartNewRoundResponse) {}
     rpc EndRound (RoundEndingRequest) returns (RoundEndingResponse) {}
     rpc Broadcast (ServerBroadcast) returns (google.protobuf.Empty) {}
-    rpc ConnectServer (ClientConnectionRequest) returns (ClientConnectionReponse) {}
+    rpc ConnectServer (ClientConnectionRequest) returns (ClientConnectionResponse) {}
 }
 
 message PlayerInfo {
@@ -64,7 +64,7 @@ message RacketStatus {
     Velocity velocity = 3;
 }
 
-message RacketStatusReponse {
+message RacketStatusResponse {
     bool result = 1;
     string detail = 2;
 }
@@ -73,7 +73,7 @@ message ChangeTurnRequest {
     uint32 new_id = 1;
 }
 
-message ChangeTurnReponse {
+message ChangeTurnResponse {
     bool result = 1;
     string detail = 2;
 }
@@ -116,7 +116,7 @@ message ClientConnectionRequest {
     uint32 port_number = 3;
 }
 
-message ClientConnectionReponse {
+message ClientConnectionResponse {
     bool result = 1;
     string detail = 2;
     PlayerInfo player_info = 3;

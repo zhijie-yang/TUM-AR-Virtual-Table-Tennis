@@ -14,7 +14,6 @@ set(PROTOS
     ${CMAKE_CURRENT_SOURCE_DIR}/proto/network.proto
 )
 
-message(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_FILE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/proto)
 get_filename_component(PROTO_FILE ${PROTO_FILE_DIR}/network.proto ABSOLUTE)
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/proto_src)
@@ -43,7 +42,8 @@ add_custom_command(
 include_directories(${PROTO_SRC_DIR})
 
 add_library(${PROJECT_NAME}
-	"src/lib${PROJECT_NAME}/server.cpp"
+	src/lib${PROJECT_NAME}/server.cpp
+    src/lib${PROJECT_NAME}/client.cpp
     ${PROTO_SRC_DIR}/network.grpc.pb.h
     ${PROTO_SRC_DIR}/network.grpc.pb.cc
     ${PROTO_SRC_DIR}/network.pb.h
