@@ -35,3 +35,5 @@
 build/
 out/
 .vs/
+.vscode/
+proto_src/
