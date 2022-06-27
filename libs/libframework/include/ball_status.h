@@ -2,6 +2,7 @@
 #define LIBFRAMEWORK_BALL
 
 #include "geometry.h"
+#include "libnetwork/proto_src/network.pb.h"
 
 enum Status {
         UNKNOWN,
@@ -16,11 +17,15 @@ enum Status {
 class BallStatus {
     BallStatus();
     ~BallStatus();
+
 private:
     unsigned int ball_id;
     Transform pose;
     Velocity velocity;
     enum Status status;
+
+public:
+    virtual libnetwork::BallStatus toProto() = 0;
 };
 
 #endif // !LIBFRAMEWORK_BALL

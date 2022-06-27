@@ -10,8 +10,6 @@
 #include "network.grpc.pb.h"
 #include "network.pb.h"
 
-libnetwork::BallStatus
-
 
 #endif
 // !LIBNETWORK_CONVERT_H
