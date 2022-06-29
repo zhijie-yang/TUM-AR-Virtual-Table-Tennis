@@ -3,30 +3,45 @@
 
 #include <glm/gtx/transform.hpp>
 
-class Transform: public glm::mat4 {
+class Transform {
+private:
+    glm::mat4 transform;
+
+public:
+    glm::mat4 get_transform() {
+        return this->transform;
+    }
+
     glm::mat3 get_rotm() {
-        glm::mat3 rotm;
-        // TODO @Siyun-Liang column-major or row-major???
-        return rotm;
+        return glm::mat3(glm::vec3(this->transform[0]),
+                                   glm::vec3(this->transform[1]),
+                                   glm::vec3(this->transform[2]));
     }
 
     glm::vec3 get_translation() {
-        glm::vec3 t;
-        // TODO @Siyun-Liang
-        return t;
+        return glm::vec3(this->transform[3]);
     }
 
     // SE(3) inverse
     glm::mat4 inverse() {
-        // TODO @Siyun-Liang
+        glm::vec3 translation = this->get_translation();
+        glm::mat3 rotm = this->get_rotm();
+        glm::mat3 rotmInverse = glm::transpose(rotm);
+        glm::vec3 transInverse = - rotmInverse * translation;
+        return glm::mat4(glm::vec4(rotmInverse[0], 0),
+                         glm::vec4(rotmInverse[1], 0),
+                         glm::vec4(rotmInverse[2], 0),
+                         glm::vec4(transInverse, 1));
     }
 
-    void set_rotm() {
-        // TODO @Siyun-Liang
+    void set_rotm(glm::mat3 rotm) {
+        this->transform[0] = glm::vec4(rotm[0], 0);
+        this->transform[1] = glm::vec4(rotm[1], 0);
+        this->transform[2] = glm::vec4(rotm[2], 0);
     }
 
-    void set_translation() {
-        // TODO @Siyun-Liang
+    void set_translation(glm::vec3 translation) {
+        this->transform[3] = glm::vec4(translation, 1);
     }
 
 };
