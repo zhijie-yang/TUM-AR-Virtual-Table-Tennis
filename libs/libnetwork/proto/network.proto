@@ -5,10 +5,10 @@ import "google/protobuf/empty.proto";
 package libnetwork;
 
 service VirtualTennis {
-    rpc SendBallStatus (BallStatus) returns (BallStatusResponse) {}
-    rpc SendRacketStatus (RacketStatus) returns (RacketStatusResponse) {}
-    rpc SendScoreBoard (ScoreBoard) returns (ScoreBoardResponse) {}
-    rpc ChangeTurn (ChangeTurnRequest) returns (ChangeTurnResponse) {}
+    rpc SendBallStatus (BallStatus) returns (GeneralResponse) {}
+    rpc SendRacketStatus (RacketStatus) returns (GeneralResponse) {}
+    rpc SendScoreBoard (ScoreBoard) returns (GeneralResponse) {}
+    rpc ChangeTurn (ChangeTurnRequest) returns (GeneralResponse) {}
     rpc StartNewRound (StartNewRoundRequest) returns (StartNewRoundResponse) {}
     rpc EndRound (RoundEndingRequest) returns (RoundEndingResponse) {}
     rpc Broadcast (ServerBroadcast) returns (google.protobuf.Empty) {}
@@ -53,7 +53,11 @@ message BallStatus {
     }
 }
 
-message BallStatusResponse {
+// RacketStatusResponse
+// ChangeTurnResponse
+// BallStatusResponse
+// ScoreBoardResponse
+message GeneralResponse {
     bool result = 1;
     string detail = 2;
 }
@@ -64,18 +68,8 @@ message RacketStatus {
     Velocity velocity = 3;
 }
 
-message RacketStatusResponse {
-    bool result = 1;
-    string detail = 2;
-}
-
 message ChangeTurnRequest {
     uint32 new_id = 1;
-}
-
-message ChangeTurnResponse {
-    bool result = 1;
-    string detail = 2;
 }
 
 message StartNewRoundRequest {
@@ -98,11 +92,6 @@ message RoundEndingResponse {
 message ScoreBoard {
     uint32 player_1_score = 1;
     uint32 player_2_score = 2;
-}
-
-message ScoreBoardResponse {
-    bool result = 1;
-    string detail = 2;
 }
 
 message ServerBroadcast {

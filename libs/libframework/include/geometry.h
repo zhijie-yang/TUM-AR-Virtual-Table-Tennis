@@ -51,7 +51,10 @@ public:
     }
 
     void fromProto(const libnetwork::Transform &t, Transform &out) {
-        
+        float tmat[16];
+        for (int i = 0; i < 16; ++i)
+            tmat[i] = t.transform(i);
+        out.data = glm::make_mat4(tmat);
     }
 
 };
@@ -92,6 +95,13 @@ public:
         v.set_w_y(this->angular[1]);
         v.set_w_z(this->angular[2]);
         return v;
+    }
+
+    void fromProto(const libnetwork::Velocity &v, Velocity &out) {
+        float v_arr[3] = {v.v_x(), v.v_y(), v.v_z()};
+        float w_arr[3] = {v.w_x(), v.w_y(), v.w_z()};
+        out.linear = glm::make_vec3(v_arr);
+        out.angular = glm::make_vec3(w_arr);
     }
 };
 

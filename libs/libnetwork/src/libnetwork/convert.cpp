@@ -13,7 +13,6 @@ libnetwork::Transform Transform::toProto() {
 libnetwork::BallStatus BallStatus::toProto() {
     libnetwork::BallStatus msg;
     msg.set_ball_id(this->ball_id);
-    Transform t = this->pose;
-    msg.set_allocated_pose(pose.toProto());
-    msg.set_allocated_velocity(this->velocity);
+    msg.set_allocated_pose(new libnetwork::Transform(this->pose.toProto()));
+    msg.set_allocated_velocity(new libnetwork::Velocity(this->velocity.toProto()));
 }
