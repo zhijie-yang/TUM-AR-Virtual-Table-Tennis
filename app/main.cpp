@@ -21,7 +21,7 @@ int main(int, char **) {
 	rendering_manager rendering;
 	rendering_settings rsettings;
 	rsettings.window_width = 800;
-	rsettings.window_height = 480;
+	rsettings.window_height = 600;
 	rsettings.frame_width = vision.capture_width_get();
 	rsettings.frame_height = vision.capture_height_get();
 

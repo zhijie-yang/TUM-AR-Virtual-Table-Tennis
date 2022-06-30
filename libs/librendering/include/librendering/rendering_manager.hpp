@@ -8,10 +8,9 @@
 
 namespace librendering {
 	class rendering_manager {
-	private:
-		class impl;
-		std::unique_ptr<impl> _impl;
 	public:
+		class impl;
+
 		rendering_manager();
 		~rendering_manager();
 
@@ -21,11 +20,13 @@ namespace librendering {
 		bool paused_get() const;
 		void paused_set(bool value);
 
-		std::function<int(void*, int)> capture_deserialize();
+		std::function<int(void*, int, int, int)> capture_deserialize();
 
 		int init(const rendering_settings& settings);
 		int run_tick();
 		int term();
+	private:
+		std::unique_ptr<impl> _impl;
 	};
 }
 

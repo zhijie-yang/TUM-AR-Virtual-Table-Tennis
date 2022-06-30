@@ -1,31 +1,77 @@
 #include "librendering/rendering_manager.hpp"
 
 #include "imgui.h"
-#include "backends/imgui_impl_sdl.h"
-#include "backends/imgui_impl_sdlrenderer.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include <iostream>
-#include <SDL.h>
+#include <memory>
 
-#if !SDL_VERSION_ATLEAST(2,0,17)
-#error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
-#endif
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+#include <librendering/filesystem.h>
+#include <librendering/shader_m.h>
+#include <librendering/camera.h>
+#include <librendering/model.h>
 
 using namespace librendering;
 
+void glfw_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void processInput(GLFWwindow* window);
+
+static rendering_manager::impl* _instance;
+
 class rendering_manager::impl {
 private:
-	SDL_Window* _window;
-	SDL_Renderer* _renderer;
-    SDL_Texture* _texture;
+    GLFWwindow* _window;
 
-	SDL_Event e;
+    GLuint _frameTextureId;
+    GLuint _frameVerticesId;
+    GLuint _frameVerticesBufferId;
+    GLuint _frameUVsBufferId;
+
+    std::unique_ptr<Shader> _frameShader;
 
 	bool _paused;
 	bool _quit;
+    rendering_settings _settings;
 public:
-	impl() : e{}, _window{nullptr}, _renderer{nullptr}, _paused{false}, _quit{false}
-    {}
+    // camera
+    Camera camera;
+    float lastX;
+    float lastY;
+    bool firstMouse;
+
+    // timing
+    float deltaTime;
+    float lastFrame;
+
+    std::unique_ptr<Shader> ourShader;
+    std::unique_ptr<Model> ourModel;
+
+	impl() :
+        _window{nullptr},
+        _paused{ false }, _quit{ false },
+        _frameTextureId{0}, _frameVerticesId{0},
+        _settings{}
+    {
+        _instance = this;
+    }
     ~impl() = default;
 
 	bool quit_get() const
@@ -48,62 +94,131 @@ public:
         _paused = value;
     }
 
-    std::function<int(void*, int)> capture_deserialize()
+    std::function<int(void*, int, int, int)> capture_deserialize()
     {
-        return [&](void* data, int size) -> int
+        return [&](void* data, int rows, int cols, int channels) -> int
         {
-            unsigned char* texture_data = NULL;
-            int texture_pitch = 0;
-
-            SDL_LockTexture(_texture, 0, (void**)&texture_data, &texture_pitch);
-            memcpy(texture_data, data, size);
-            SDL_UnlockTexture(_texture);
-
+            glBindTexture(GL_TEXTURE_2D, _frameTextureId);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_BGR, GL_UNSIGNED_BYTE, data);
             return 0;
         };
     }
 
 	int init(const rendering_settings& settings)
     {
-        if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-        {
-            std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
+        _settings = settings;
+
+        camera = Camera{ glm::vec3(0.0f, 0.0f, 3.0f) };
+        lastX = settings.window_width / 2.f;
+        lastY = settings.window_height / 2.f;
+        firstMouse = true;
+        deltaTime = 0.0f;
+        lastFrame = 0.0f;
+
+        // ---------------------------------------
+        // GLFW Initialization
+        // ---------------------------------------
+        glfwSetErrorCallback(glfw_error_callback);
+        if (!glfwInit())
+            return 1;
+
+        _window = glfwCreateWindow(settings.window_width, settings.window_height, "Virtual Tennis", NULL, NULL);
+        if (!_window) {
             return 1;
         }
+        glfwMakeContextCurrent(_window);
+        glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
+        glfwSetCursorPosCallback(_window, mouse_callback);
+        glfwSetScrollCallback(_window, scroll_callback);
+        //glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        // Setup window
-        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        _window = SDL_CreateWindow("Dear ImGui+SDL2+SDL_Renderer+OpenCV", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, settings.window_width, settings.window_height, window_flags);
-        if (_window == NULL)
+        const char* glsl_version = "#version 330 core";
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+        // ---------------------------------------
+        // GLAD Initialization
+        // ---------------------------------------
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-            std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
-            SDL_Quit();
-            return 1;
+            std::cout << "Failed to initialize GLAD" << std::endl;
+            return -1;
         }
 
-        // Setup SDL_Renderer instance
-        _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-        if (_renderer == NULL)
-        {
-            std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
-            SDL_DestroyWindow(_window);
-            SDL_Quit();
-            return 1;
-        }
+        stbi_set_flip_vertically_on_load(true);
 
-        _texture = SDL_CreateTexture(
-            _renderer,
-            SDL_PIXELFORMAT_BGR24,
-            SDL_TEXTUREACCESS_STREAMING,
-            settings.frame_width,
-            settings.frame_height
-        );
+        glEnable(GL_DEPTH_TEST);
 
+        ourShader = std::make_unique<Shader>("data/1.model_loading.vs", "data/1.model_loading.fs");
+        ourModel = std::make_unique<Model>("data/10519_Pingpong_paddle_v1_L3.obj");
+
+        // ---------------------------------------
+        // Frame Initialization
+        // ---------------------------------------
+        glGenVertexArrays(1, &_frameVerticesId);
+        glBindVertexArray(_frameVerticesId);
+        static const GLfloat g_vertex_buffer_data[] = {
+           -1.0f, -1.0f, 0.0f, // bl
+           1.0f, -1.0f, 0.0f,  // br
+           1.0f,  1.0f, 0.0f,  // tr
+
+           -1.0f, -1.0f, 0.0f, // bl
+           1.0f,  1.0f, 0.0f,  // tr
+           -1.0f, 1.0f, 0.0f,  // tl
+        };
+        static const GLfloat g_uv_buffer_data[] = {
+           0.0f, 1.0f, // bl
+           1.0f, 1.0f, // br
+           1.0f, 0.0f, // tr
+
+           0.0f, 1.0f, // bl
+           1.0f, 0.0f, // tr
+           0.0f, 0.0f, // tl
+        };
+        glGenBuffers(1, &_frameVerticesBufferId);
+        glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+        glGenBuffers(1, &_frameUVsBufferId);
+        glBindBuffer(GL_ARRAY_BUFFER, _frameUVsBufferId);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
+
+        _frameShader = std::make_unique<Shader>("data/fullscreen.vs", "data/fullscreen.fs");
+
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        glGenTextures(1, &_frameTextureId);
+        glBindTexture(GL_TEXTURE_2D, _frameTextureId);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        // Set texture clamping method
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        auto* data = new char[settings.frame_width * settings.frame_height * 3];
+        glTexImage2D(GL_TEXTURE_2D, // Type of texture
+            0,                      // Pyramid level (for mip-mapping) - 0 is the top level
+            GL_RGB,                 // Internal colour format to convert to
+            settings.frame_width,   // Image width  i.e. 640 for Kinect in standard mode
+            settings.frame_height,  // Image height i.e. 480 for Kinect in standard mode
+            0,                      // Border width in pixels (can either be 1 or 0)
+            GL_RGB,                 // Input image format (i.e. GL_RGB, GL_RGBA, GL_BGR etc.)
+            GL_UNSIGNED_BYTE,       // Image data type
+            data);                  // The actual image data itself
+        delete[] data;
+
+        // ---------------------------------------
+        // ImGUI Initialization
+        // ---------------------------------------
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
-        ImGui_ImplSDL2_InitForSDLRenderer(_window, _renderer);
-        ImGui_ImplSDLRenderer_Init(_renderer);
+        ImGui_ImplGlfw_InitForOpenGL(_window, true);
+        ImGui_ImplOpenGL3_Init(glsl_version);
 
         std::cout << "Hot keys:" << std::endl;
         std::cout << "\tESC - quit the program" << std::endl;
@@ -114,33 +229,17 @@ public:
 
 	int run_tick()
     {
-        while (SDL_PollEvent(&e))
-        {
-            ImGui_ImplSDL2_ProcessEvent(&e);
-            switch (e.type)
-            {
-            case SDL_QUIT:
-                quit_set();
-                break;
+        _quit = _quit || glfwWindowShouldClose(_window);
 
-            case SDL_KEYDOWN:
-                switch (e.key.keysym.sym)
-                {
-                case SDLK_ESCAPE:
-                    quit_set();
-                    break;
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
 
-                case SDLK_p:
-                    paused_set(!paused_get());
-                    break;
-                }
-                break;
-            }
-        }
+        processInput(_window);
 
         // Start the Dear ImGui frame
-        ImGui_ImplSDLRenderer_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         {
@@ -152,19 +251,66 @@ public:
                 //
             }
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f * deltaTime, 1.f / deltaTime);
 
             ImGui::End();
         }
 
         // Rendering
         ImGui::Render();
-        SDL_RenderClear(_renderer);
-        SDL_RenderCopy(_renderer, _texture, NULL, NULL);
-        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
-        SDL_RenderPresent(_renderer);
 
-        SDL_Delay(10);
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        _frameShader->use();
+
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
+        glVertexAttribPointer(
+            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+        );
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, _frameUVsBufferId);
+        glVertexAttribPointer(
+            1,                  // attribute 1.
+            2,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+        );
+        glBindTexture(GL_TEXTURE_2D, _frameTextureId);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(0);
+
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        // don't forget to enable shader before setting uniforms
+        ourShader->use();
+
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        ourShader->setMat4("projection", projection);
+        ourShader->setMat4("view", view);
+
+        // render the loaded model
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        ourShader->setMat4("model", model);
+        ourModel->Draw(*ourShader);
+        
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        
+        glfwSwapBuffers(_window);
+        glfwPollEvents();
 
         return 0;
     }
@@ -172,19 +318,79 @@ public:
 	int term()
     {
         // Cleanup
-        ImGui_ImplSDLRenderer_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        SDL_DestroyTexture(_texture);
+        glDeleteBuffers(1, &_frameVerticesBufferId);
+        glDeleteBuffers(1, &_frameUVsBufferId);
+        glDeleteProgram(_frameShader->ID);
+        glDeleteTextures(1, &_frameTextureId);
+        glDeleteVertexArrays(1, &_frameVerticesId);
 
-        SDL_DestroyRenderer(_renderer);
-        SDL_DestroyWindow(_window);
-        SDL_Quit();
+        glDeleteProgram(ourShader->ID);
+
+        glfwTerminate();
 
         return 0;
     }
 };
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        _instance->camera.ProcessKeyboard(FORWARD, _instance->deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        _instance->camera.ProcessKeyboard(BACKWARD, _instance->deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        _instance->camera.ProcessKeyboard(LEFT, _instance->deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        _instance->camera.ProcessKeyboard(RIGHT, _instance->deltaTime);
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and 
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (_instance->firstMouse)
+    {
+        _instance->lastX = xpos;
+        _instance->lastY = ypos;
+        _instance->firstMouse = false;
+    }
+
+    float xoffset = xpos - _instance->lastX;
+    float yoffset = _instance->lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    _instance->lastX = xpos;
+    _instance->lastY = ypos;
+
+    _instance->camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    _instance->camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
 
 rendering_manager::rendering_manager()
     : _impl{ std::make_unique<impl>() }
@@ -213,7 +419,7 @@ void rendering_manager::paused_set(bool value)
     _impl->paused_set(value);
 }
 
-std::function<int(void*, int)> rendering_manager::capture_deserialize()
+std::function<int(void*, int, int, int)> rendering_manager::capture_deserialize()
 {
     return _impl->capture_deserialize();
 }
