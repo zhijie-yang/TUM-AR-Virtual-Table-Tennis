@@ -1,6 +1,16 @@
 #include "libtennis/ball.hpp"
 #include <glm/gtx/transform.hpp>
 
+const float & libtennis::ball::get_radius() const
+{
+    return _radius;
+}
+
+const float & libtennis::ball::get_mass() const
+{
+    return _mass;
+}
+
 const glm::vec3& libtennis::ball::get_position() const
 {
 	return _position;

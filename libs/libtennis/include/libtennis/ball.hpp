@@ -8,6 +8,9 @@ namespace libtennis {
 	private:
 		glm::vec3 _position;
 		glm::vec3 _velocity;
+        const float _radius = 0.2; // centimeter
+        const float _mass = 2.5; // gram
+
 	public:
 		ball() = default;
 
@@ -18,6 +21,9 @@ namespace libtennis {
 
 		const glm::vec3& get_velocity() const;
 		void set_velocity(const glm::vec3& value);
+
+        const float& get_radius() const;
+        const float& get_mass() const;
 
 		/// <summary>
 		/// Get serialization result size in bytes.

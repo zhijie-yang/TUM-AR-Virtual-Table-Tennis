@@ -3,7 +3,11 @@ project(tennis)
 add_library(${PROJECT_NAME}
 	"src/libtennis/priv-impl.cpp"
 	"src/libtennis/ball.cpp"
-	"include/libtennis/collisionDetect.h")
+	"include/libtennis/collisionDetect.h"
+	"src/libtennis/tennis_manager.cpp"
+	"include/libtennis/tennis_manager.h"
+	"src/libtennis/scoreboard.cpp"
+	"include/libtennis/scoreboard.h")
 
 add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
