@@ -24,6 +24,7 @@ int main(int, char **) {
 	rsettings.window_height = 600;
 	rsettings.frame_width = vision.capture_width_get();
 	rsettings.frame_height = vision.capture_height_get();
+	rsettings.free_cam_enabled = true;
 
 	if (rendering.init(rsettings)) {
 		cerr << "Failed to init rendering.\n";

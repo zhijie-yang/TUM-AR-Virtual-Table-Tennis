@@ -44,9 +44,18 @@ private:
     GLuint _frameVerticesId;
     GLuint _frameVerticesBufferId;
     GLuint _frameUVsBufferId;
-
     std::unique_ptr<Shader> _frameShader;
 
+    glm::mat4 _racket1Model;
+    glm::mat4 _racket2Model;
+    glm::mat4 _ballModel;
+    glm::mat4 _view;
+    glm::mat4 _proj;
+
+    std::unique_ptr<Model> _ballObject;
+    std::unique_ptr<Model> _racketObject;
+
+    bool _freeCamEnabled;
 	bool _paused;
 	bool _quit;
     rendering_settings _settings;
@@ -62,7 +71,6 @@ public:
     float lastFrame;
 
     std::unique_ptr<Shader> ourShader;
-    std::unique_ptr<Model> ourModel;
 
 	impl() :
         _window{nullptr},
@@ -94,6 +102,51 @@ public:
         _paused = value;
     }
 
+    std::function<int(const glm::mat4&)> racket2_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _racket2Model = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const glm::mat4&)> racket1_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _racket1Model = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const glm::mat4&)> ball_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _ballModel = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const glm::mat4&)> view_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _view = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const glm::mat4&)> proj_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _proj = value;
+            return 0;
+        };
+    }
+
     std::function<int(void*, int, int, int)> capture_deserialize()
     {
         return [&](void* data, int rows, int cols, int channels) -> int
@@ -114,6 +167,15 @@ public:
         firstMouse = true;
         deltaTime = 0.0f;
         lastFrame = 0.0f;
+
+        _freeCamEnabled = settings.free_cam_enabled;
+
+        _view = glm::mat4(1.0f);
+        _proj = glm::perspective(glm::radians(camera.Zoom), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
+        _ballModel = glm::mat4(1.0f);
+        _ballModel = glm::translate(_ballModel, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        _ballModel = glm::scale(_ballModel, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        _racket1Model = _racket2Model = _ballModel;
 
         // ---------------------------------------
         // GLFW Initialization
@@ -155,7 +217,8 @@ public:
         glEnable(GL_DEPTH_TEST);
 
         ourShader = std::make_unique<Shader>("data/1.model_loading.vs", "data/1.model_loading.fs");
-        ourModel = std::make_unique<Model>("data/10519_Pingpong_paddle_v1_L3.obj");
+        _racketObject = std::make_unique<Model>("data/racket.fbx");
+        _ballObject = std::make_unique<Model>("data/ball.fbx");
 
         // ---------------------------------------
         // Frame Initialization
@@ -295,17 +358,25 @@ public:
         ourShader->use();
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        ourShader->setMat4("projection", projection);
+        glm::mat4 view;
+        if (_freeCamEnabled)
+        {
+            view = camera.GetViewMatrix();
+        }
+        else
+        {
+            view = _view;
+        }
+        ourShader->setMat4("projection", _proj);
         ourShader->setMat4("view", view);
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        ourShader->setMat4("model", model);
-        ourModel->Draw(*ourShader);
+        ourShader->setMat4("model", _ballModel);
+        _ballObject->Draw(*ourShader);
+        ourShader->setMat4("model", _racket1Model);
+        _racketObject->Draw(*ourShader);
+        ourShader->setMat4("model", _racket2Model);
+        _racketObject->Draw(*ourShader);
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         
@@ -437,4 +508,29 @@ int rendering_manager::run_tick()
 int rendering_manager::term()
 {
     return _impl->term();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::proj_deserialize()
+{
+    return _impl->proj_deserialize();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::view_deserialize()
+{
+    return _impl->proj_deserialize();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::ball_deserialize()
+{
+    return _impl->proj_deserialize();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::racket1_deserialize()
+{
+    return _impl->proj_deserialize();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::racket2_deserialize()
+{
+    return _impl->proj_deserialize();
 }

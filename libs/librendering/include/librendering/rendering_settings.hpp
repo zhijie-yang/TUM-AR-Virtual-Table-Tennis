@@ -9,6 +9,8 @@ namespace librendering {
 
 		int window_width;
 		int window_height;
+
+		bool free_cam_enabled;
 	};
 }
 
