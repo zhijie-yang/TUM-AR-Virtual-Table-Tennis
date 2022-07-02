@@ -2,24 +2,37 @@
 #define LIBFRAMEWORK_RACKET
 
 #include "geometry.h"
-
-enum Status {
-        UNKNOWN,
-        WAITING_START,
-        FLYING,
-        HIT_WITH_RACKET,
-        HIT_WITH_TABLE,
-        HIT_WITH_NET,
-        OUT_OF_BOUND
-};
+#include "libnetwork/proto_src/network.pb.h"
 
 class RacketStatus {
+public:
     RacketStatus();
+    RacketStatus(unsigned const& player_id, Transform const& pose, Velocity const& velocity) {
+        this->player_id = player_id;
+        this->pose = pose;
+        this->velocity = velocity;
+    }
     ~RacketStatus();
+
 private:
-    unsigned int player_id;
+    unsigned player_id;
     Transform pose;
     Velocity velocity;
+
+public:
+    inline libnetwork::RacketStatus* toProto() {
+        auto r = new libnetwork::RacketStatus();
+        r->set_player_id(this->player_id);
+        r->set_allocated_pose(this->pose.toProto());
+        r->set_allocated_velocity(this->velocity.toProto());
+        return r;
+    }
+
+    inline static void fromProto(const libnetwork::RacketStatus &r, RacketStatus &out) {
+        out.player_id = r.player_id();
+        Transform::fromProto(r.pose(), out.pose);
+        Velocity::fromProto(r.velocity(), out.velocity);
+    }
 };
 
 #endif // !LIBFRAMEWORK_RACKET

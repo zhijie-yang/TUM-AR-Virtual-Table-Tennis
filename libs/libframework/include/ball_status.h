@@ -4,7 +4,7 @@
 #include "geometry.h"
 #include "libnetwork/proto_src/network.pb.h"
 
-enum Status {
+enum FlyingStatus {
         UNKNOWN,
         WAITING_START,
         FLYING,
@@ -15,17 +15,39 @@ enum Status {
 };
 
 class BallStatus {
+public:
     BallStatus();
+    BallStatus(unsigned const& ball_id, Transform const& pose,
+               Velocity const& velocity, unsigned const& flying_status) {
+        this->ball_id = ball_id;
+        this->pose = pose;
+        this->velocity = velocity;
+        this->flying_status = static_cast<FlyingStatus>(flying_status);
+    }
     ~BallStatus();
 
 private:
-    unsigned int ball_id;
+    unsigned ball_id;
     Transform pose;
     Velocity velocity;
-    enum Status status;
+    enum FlyingStatus flying_status;
 
 public:
-    virtual libnetwork::BallStatus toProto() = 0;
+    inline libnetwork::BallStatus* toProto() {
+        auto r = new libnetwork::BallStatus();
+        r->set_ball_id(this->ball_id);
+        r->set_allocated_pose(this->pose.toProto());
+        r->set_allocated_velocity(this->velocity.toProto());
+        r->set_flying_status(this->flying_status);
+        return r;
+    }
+
+    inline static void fromProto(const libnetwork::BallStatus &r, BallStatus &out) {
+        out.ball_id = r.ball_id();
+        Transform::fromProto(r.pose(), out.pose);
+        Velocity::fromProto(r.velocity(), out.velocity);
+        out.flying_status = static_cast<FlyingStatus>(r.flying_status());
+    }
 };
 
 #endif // !LIBFRAMEWORK_BALL

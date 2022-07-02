@@ -7,50 +7,52 @@
 
 class Transform{
 public:
+    Transform();
     Transform(glm::mat4 const& m) {data:m;}
+    ~Transform();
 
 private:
     glm::mat4 data; 
 
 public:
-    glm::mat3 get_rotm() {
+    inline glm::mat3 get_rotm() {
         glm::mat3 rotm;
         // TODO @Siyun-Liang column-major or row-major???
         return rotm;
     }
 
-    glm::vec3 get_translation() {
+    inline glm::vec3 get_translation() {
         glm::vec3 t;
         // TODO @Siyun-Liang
         return t;
     }
 
     // SE(3) inverse
-    glm::mat4 inverse() {
+    inline glm::mat4 inverse() {
         // TODO @Siyun-Liang
     }
 
-    void set_rotm() {
+    inline void set_rotm() {
         // TODO @Siyun-Liang
     }
 
-    void set_translation() {
+    inline void set_translation() {
         // TODO @Siyun-Liang
     }
 
-    const glm::f32* get_value_ptr() {
+    inline const glm::f32* get_value_ptr() {
         return glm::value_ptr(data);
     }    
 
-    libnetwork::Transform toProto() {
-        libnetwork::Transform t;
+    inline libnetwork::Transform* toProto() {
+        auto t = new libnetwork::Transform();
         const float *m = (const float*) this->get_value_ptr();
         for (int i = 0; i < 16; ++i)
-            t.add_transform(m[i]);
+            t->add_transform(m[i]);
         return t;
     }
 
-    void fromProto(const libnetwork::Transform &t, Transform &out) {
+    inline static void fromProto(const libnetwork::Transform &t, Transform &out) {
         float tmat[16];
         for (int i = 0; i < 16; ++i)
             tmat[i] = t.transform(i);
@@ -60,44 +62,47 @@ public:
 };
 
 class Velocity {
+public:
+    Velocity();
     Velocity (glm::vec3 const& linear, glm::vec3 const& angular) {
         this->linear = linear;
         this->angular = angular;
     }
+    ~Velocity();
 
 private:
     glm::vec3 linear;
     glm::vec3 angular;
 
 public:
-    glm::vec3 get_linear() {
+    inline glm::vec3 get_linear() {
         return this->linear;
     }
 
-    glm::vec3 get_angular() {
+    inline glm::vec3 get_angular() {
         return this->angular;
     }
 
-    void set_linear(glm::vec3 const& linear) {
+    inline void set_linear(glm::vec3 const& linear) {
         this->linear = linear;
     }
 
-    void set_angular(glm::vec3 const& angular) {
+    inline void set_angular(glm::vec3 const& angular) {
         this->angular = angular;
     }
 
-    libnetwork::Velocity toProto() {
-        libnetwork::Velocity v;
-        v.set_v_x(this->linear[0]);
-        v.set_v_y(this->linear[1]);
-        v.set_v_z(this->linear[2]);
-        v.set_w_x(this->angular[0]);
-        v.set_w_y(this->angular[1]);
-        v.set_w_z(this->angular[2]);
+    inline libnetwork::Velocity* toProto() {
+        auto v = new libnetwork::Velocity();
+        v->set_v_x(this->linear[0]);
+        v->set_v_y(this->linear[1]);
+        v->set_v_z(this->linear[2]);
+        v->set_w_x(this->angular[0]);
+        v->set_w_y(this->angular[1]);
+        v->set_w_z(this->angular[2]);
         return v;
     }
 
-    void fromProto(const libnetwork::Velocity &v, Velocity &out) {
+    inline static void fromProto(const libnetwork::Velocity &v, Velocity &out) {
         float v_arr[3] = {v.v_x(), v.v_y(), v.v_z()};
         float w_arr[3] = {v.w_x(), v.w_y(), v.w_z()};
         out.linear = glm::make_vec3(v_arr);
