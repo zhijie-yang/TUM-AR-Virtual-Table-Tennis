@@ -5,7 +5,7 @@
 #include "infos.h"
 #include "libnetwork/proto_src/network.pb.h"
 
-struct ChangeTurnRequest {
+class ChangeTurnRequest {
 public:
     ChangeTurnRequest();
     ChangeTurnRequest(unsigned const& new_id) {
@@ -36,7 +36,7 @@ public:
     }
 };
 
-struct StartNewRoundRequest {
+class StartNewRoundRequest {
 public:
     StartNewRoundRequest();
     StartNewRoundRequest(PlayerInfo const& player_info) {
@@ -67,7 +67,7 @@ public:
     }
 };
 
-struct RoundEndingRequest {
+class RoundEndingRequest {
 public:
     RoundEndingRequest();
     RoundEndingRequest(unsigned const& winner_id) {
@@ -100,7 +100,7 @@ public:
 
 };
 
-struct ClientConnectionRequest {
+class ClientConnectionRequest {
 public:
     ClientConnectionRequest();
     ClientConnectionRequest(std::string const& server_ip,

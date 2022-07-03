@@ -1,6 +1,7 @@
 #ifndef LIBFRAMEWORK_GEOMETRY
 #define LIBFRAMEWORK_GEOMETRY
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "libnetwork/proto_src/network.pb.h"
@@ -8,29 +9,29 @@
 class Transform {
 public:
     Transform();
-    Transform(glm::mat4 const& m) {data:m;}
+    Transform(glm::mat4 const& m) {this->transform = m;}
     ~Transform();
 
 private:
     glm::mat4 transform;
 
 public:
-    glm::mat4 get_transform() {
+    inline glm::mat4 get_transform() {
         return this->transform;
     }
 
-    glm::mat3 get_rotm() {
+    inline glm::mat3 get_rotm() {
         return glm::mat3(glm::vec3(this->transform[0]),
                                    glm::vec3(this->transform[1]),
                                    glm::vec3(this->transform[2]));
     }
 
-    glm::vec3 get_translation() {
+    inline glm::vec3 get_translation() {
         return glm::vec3(this->transform[3]);
     }
 
     // SE(3) inverse
-    glm::mat4 inverse() {
+    inline glm::mat4 inverse() {
         glm::vec3 translation = this->get_translation();
         glm::mat3 rotm = this->get_rotm();
         glm::mat3 rotmInverse = glm::transpose(rotm);
@@ -41,18 +42,18 @@ public:
                          glm::vec4(transInverse, 1));
     }
 
-    void set_rotm(glm::mat3 rotm) {
+    inline void set_rotm(glm::mat3 rotm) {
         this->transform[0] = glm::vec4(rotm[0], 0);
         this->transform[1] = glm::vec4(rotm[1], 0);
         this->transform[2] = glm::vec4(rotm[2], 0);
     }
 
-    void set_translation(glm::vec3 translation) {
+    inline void set_translation(glm::vec3 translation) {
         this->transform[3] = glm::vec4(translation, 1);
     }
 
     inline const glm::f32* get_value_ptr() {
-        return glm::value_ptr(data);
+        return glm::value_ptr(this->transform);
     }    
 
     inline void toProto(libnetwork::Transform& t) {
@@ -73,7 +74,7 @@ public:
         float tmat[16];
         for (int i = 0; i < 16; ++i)
             tmat[i] = t.transform(i);
-        out.data = glm::make_mat4(tmat);
+        out.transform = glm::make_mat4(tmat);
     }
 
 };

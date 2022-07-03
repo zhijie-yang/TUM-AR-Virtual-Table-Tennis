@@ -4,7 +4,7 @@
 #include <string>
 #include "libnetwork/proto_src/network.pb.h"
 
-struct PlayerInfo {
+class PlayerInfo {
 public:
     PlayerInfo();
     PlayerInfo(unsigned const& player_id, std::string const& player_name) {
@@ -45,7 +45,7 @@ public:
 
 };
 
-struct ScoreBoard {
+class ScoreBoard {
 public:
     ScoreBoard();
     ScoreBoard(unsigned const& player_1_score, unsigned const& player_2_score) {
@@ -86,7 +86,7 @@ public:
 
 };
 
-struct ServerBroadcast {
+class ServerBroadcast {
 public:
     ServerBroadcast();
     ServerBroadcast(std::string ip_address, std::string host_name) {
