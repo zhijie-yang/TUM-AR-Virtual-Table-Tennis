@@ -5,39 +5,50 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "libnetwork/proto_src/network.pb.h"
 
-class Transform{
+class Transform {
 public:
     Transform();
     Transform(glm::mat4 const& m) {data:m;}
     ~Transform();
 
 private:
-    glm::mat4 data; 
+    glm::mat4 transform;
 
 public:
-    inline glm::mat3 get_rotm() {
-        glm::mat3 rotm;
-        // TODO @Siyun-Liang column-major or row-major???
-        return rotm;
+    glm::mat4 get_transform() {
+        return this->transform;
     }
 
-    inline glm::vec3 get_translation() {
-        glm::vec3 t;
-        // TODO @Siyun-Liang
-        return t;
+    glm::mat3 get_rotm() {
+        return glm::mat3(glm::vec3(this->transform[0]),
+                                   glm::vec3(this->transform[1]),
+                                   glm::vec3(this->transform[2]));
+    }
+
+    glm::vec3 get_translation() {
+        return glm::vec3(this->transform[3]);
     }
 
     // SE(3) inverse
-    inline glm::mat4 inverse() {
-        // TODO @Siyun-Liang
+    glm::mat4 inverse() {
+        glm::vec3 translation = this->get_translation();
+        glm::mat3 rotm = this->get_rotm();
+        glm::mat3 rotmInverse = glm::transpose(rotm);
+        glm::vec3 transInverse = - rotmInverse * translation;
+        return glm::mat4(glm::vec4(rotmInverse[0], 0),
+                         glm::vec4(rotmInverse[1], 0),
+                         glm::vec4(rotmInverse[2], 0),
+                         glm::vec4(transInverse, 1));
     }
 
-    inline void set_rotm() {
-        // TODO @Siyun-Liang
+    void set_rotm(glm::mat3 rotm) {
+        this->transform[0] = glm::vec4(rotm[0], 0);
+        this->transform[1] = glm::vec4(rotm[1], 0);
+        this->transform[2] = glm::vec4(rotm[2], 0);
     }
 
-    inline void set_translation() {
-        // TODO @Siyun-Liang
+    void set_translation(glm::vec3 translation) {
+        this->transform[3] = glm::vec4(translation, 1);
     }
 
     inline const glm::f32* get_value_ptr() {
