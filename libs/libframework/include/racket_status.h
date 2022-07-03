@@ -20,11 +20,17 @@ private:
     Velocity velocity;
 
 public:
-    inline libnetwork::RacketStatus* toProto() {
+    inline void toProto(libnetwork::RacketStatus& r) {
+        r.set_player_id(this->player_id);
+        r.set_allocated_pose(this->pose.toProtoAllocated());
+        r.set_allocated_velocity(this->velocity.toProtoAllocated());
+    }
+
+    inline libnetwork::RacketStatus* toProtoAllocated() {
         auto r = new libnetwork::RacketStatus();
         r->set_player_id(this->player_id);
-        r->set_allocated_pose(this->pose.toProto());
-        r->set_allocated_velocity(this->velocity.toProto());
+        r->set_allocated_pose(this->pose.toProtoAllocated());
+        r->set_allocated_velocity(this->velocity.toProtoAllocated());
         return r;
     }
 

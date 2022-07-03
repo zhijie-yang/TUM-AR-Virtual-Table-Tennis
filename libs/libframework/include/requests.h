@@ -21,7 +21,11 @@ public:
         return this->new_id;
     }
 
-    inline libnetwork::ChangeTurnRequest* toProto() {
+    inline void toProto(libnetwork::ChangeTurnRequest& r) {
+        r.set_new_id(this->new_id);
+    }
+
+    inline libnetwork::ChangeTurnRequest* toProtoAllocated() {
         auto r = new libnetwork::ChangeTurnRequest();
         r->set_new_id(this->new_id);
         return r;
@@ -48,9 +52,13 @@ public:
         return this->player_info;
     }
 
-    inline libnetwork::StartNewRoundRequest* toProto() {
+    inline void toProto(libnetwork::StartNewRoundRequest& r) {
+        r.set_allocated_player_info(this->player_info.toProtoAllocated());
+    }
+
+    inline libnetwork::StartNewRoundRequest* toProtoAllocated() {
         auto r = new libnetwork::StartNewRoundRequest();
-        r->set_allocated_player_info(this->player_info.toProto());
+        r->set_allocated_player_info(this->player_info.toProtoAllocated());
         return r;
     }
 
@@ -76,7 +84,11 @@ public:
         return this->winner_id;
     }
 
-    inline libnetwork::RoundEndingRequest* toProto() {
+    inline void toProto(libnetwork::RoundEndingRequest& r) {
+        r.set_winner_id(this->winner_id);
+    }
+
+    inline libnetwork::RoundEndingRequest* toProtoAllocated() {
         auto r = new libnetwork::RoundEndingRequest();
         r->set_winner_id(this->winner_id);
         return r;
@@ -117,10 +129,16 @@ public:
         return this->port_number;
     }
 
-    inline libnetwork::ClientConnectionRequest* toProto() {
+    inline void toProto(libnetwork::ClientConnectionRequest& r) {
+        r.set_server_ip_address(this->server_ip_address);
+        r.set_allocated_player_info(this->player_info.toProtoAllocated());
+        r.set_port_number(this->port_number);
+    }
+
+    inline libnetwork::ClientConnectionRequest* toProtoAllocated() {
         auto r = new libnetwork::ClientConnectionRequest();
         r->set_server_ip_address(this->server_ip_address);
-        r->set_allocated_player_info(this->player_info.toProto());
+        r->set_allocated_player_info(this->player_info.toProtoAllocated());
         r->set_port_number(this->port_number);
         return r;
     }

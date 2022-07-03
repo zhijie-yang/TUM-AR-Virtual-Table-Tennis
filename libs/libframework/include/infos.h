@@ -26,7 +26,12 @@ public:
         return this->player_name;
     }
 
-    inline libnetwork::PlayerInfo* toProto() {
+    inline void toProto(libnetwork::PlayerInfo& r) {
+        r.set_player_id(this->player_id);
+        r.set_player_name(this->player_name);
+    }
+
+    inline libnetwork::PlayerInfo* toProtoAllocated() {
         auto r = new libnetwork::PlayerInfo();
         r->set_player_id(this->player_id);
         r->set_player_name(this->player_name);
@@ -62,7 +67,12 @@ public:
         return this->player_2_score;
     }
 
-    inline libnetwork::ScoreBoard* toProto() {
+    inline void toProto(libnetwork::ScoreBoard& r) {
+        r.set_player_1_score(this->player_1_score);
+        r.set_player_2_score(this->player_1_score);
+    }
+
+    inline libnetwork::ScoreBoard* toProtoAllocated() {
         auto r = new libnetwork::ScoreBoard();
         r->set_player_1_score(this->player_1_score);
         r->set_player_2_score(this->player_1_score);
@@ -90,22 +100,27 @@ private:
     std::string host_name;
 
 public:
-    std::string get_ip_addr() {
+    inline std::string get_ip_addr() {
         return this->ip_address;
     }
 
-    std::string get_host_name() {
+    inline std::string get_host_name() {
         return this->host_name;
     }
 
-    libnetwork::ServerBroadcast* toProto() {
+    inline void toProto(libnetwork::ServerBroadcast& r) {
+        r.set_ip_address(this->ip_address);
+        r.set_host_name(this->host_name);
+    }
+
+    inline libnetwork::ServerBroadcast* toProtoAllocated() {
         auto r = new libnetwork::ServerBroadcast();
         r->set_ip_address(this->ip_address);
         r->set_host_name(this->host_name);
         return r;
     }
 
-    static void fromProto(const libnetwork::ServerBroadcast &r, ServerBroadcast &out) {
+    inline static void fromProto(const libnetwork::ServerBroadcast &r, ServerBroadcast &out) {
         out.ip_address = r.ip_address();
         out.host_name = r.host_name();
     }

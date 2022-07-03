@@ -44,7 +44,13 @@ public:
         return glm::value_ptr(data);
     }    
 
-    inline libnetwork::Transform* toProto() {
+    inline void toProto(libnetwork::Transform& t) {
+        const float *m = (const float*) this->get_value_ptr();
+        for (int i = 0; i < 16; ++i)
+            t.add_transform(m[i]);
+    }
+
+    inline libnetwork::Transform* toProtoAllocated() {
         auto t = new libnetwork::Transform();
         const float *m = (const float*) this->get_value_ptr();
         for (int i = 0; i < 16; ++i)
@@ -91,7 +97,16 @@ public:
         this->angular = angular;
     }
 
-    inline libnetwork::Velocity* toProto() {
+    inline void toProto(libnetwork::Velocity& v) {
+        v.set_v_x(this->linear[0]);
+        v.set_v_y(this->linear[1]);
+        v.set_v_z(this->linear[2]);
+        v.set_w_x(this->angular[0]);
+        v.set_w_y(this->angular[1]);
+        v.set_w_z(this->angular[2]);
+    }
+
+    inline libnetwork::Velocity* toProtoAllocated() {
         auto v = new libnetwork::Velocity();
         v->set_v_x(this->linear[0]);
         v->set_v_y(this->linear[1]);

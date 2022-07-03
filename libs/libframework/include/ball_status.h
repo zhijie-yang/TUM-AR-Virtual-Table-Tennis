@@ -33,12 +33,19 @@ private:
     enum FlyingStatus flying_status;
 
 public:
-    inline libnetwork::BallStatus* toProto() {
+    inline void toProto(libnetwork::BallStatus& r) {
+        r.set_ball_id(this->ball_id);
+        r.set_allocated_pose(this->pose.toProtoAllocated());
+        r.set_allocated_velocity(this->velocity.toProtoAllocated());
+        r.set_flying_status(static_cast<libnetwork::FlyingStatus>(this->flying_status));
+    }
+
+    inline libnetwork::BallStatus* toProtoAllocated() {
         auto r = new libnetwork::BallStatus();
         r->set_ball_id(this->ball_id);
-        r->set_allocated_pose(this->pose.toProto());
-        r->set_allocated_velocity(this->velocity.toProto());
-        r->set_flying_status(this->flying_status);
+        r->set_allocated_pose(this->pose.toProtoAllocated());
+        r->set_allocated_velocity(this->velocity.toProtoAllocated());
+        r->set_flying_status(static_cast<libnetwork::FlyingStatus>(this->flying_status));
         return r;
     }
 

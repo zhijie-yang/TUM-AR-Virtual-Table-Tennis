@@ -26,7 +26,12 @@ public:
         return this->detail;
     }
 
-    inline libnetwork::GeneralResponse* toProto() {
+    inline void toProto(libnetwork::GeneralResponse& r) {
+        r.set_result(this->result);
+        r.set_detail(this->detail);
+    }
+
+    inline libnetwork::GeneralResponse* toProtoAllocated() {
         auto r = new libnetwork::GeneralResponse();
         r->set_result(this->result);
         r->set_detail(this->detail);
@@ -60,9 +65,13 @@ public:
         this->player_info = p;
     }
 
-    inline libnetwork::StartNewRoundResponse* toProto() {
+    inline void toProto(libnetwork::StartNewRoundResponse& r) {
+        r.set_allocated_player_info(this->player_info.toProtoAllocated());
+    }
+
+    inline libnetwork::StartNewRoundResponse* toProtoAllocated() {
         auto r = new libnetwork::StartNewRoundResponse();
-        r->set_allocated_player_info(this->player_info.toProto());
+        r->set_allocated_player_info(this->player_info.toProtoAllocated());
         return r;
     }
 
@@ -93,10 +102,15 @@ public:
         return this->score_board;
     }
 
-    inline libnetwork::RoundEndingResponse* toProto() {
+    inline void toProto(libnetwork::RoundEndingResponse& r) {
+        r.set_result(this->result);
+        r.set_allocated_score_board(this->score_board.toProtoAllocated());
+    }
+
+    inline libnetwork::RoundEndingResponse* toProtoAllocated() {
         auto r = new libnetwork::RoundEndingResponse();
         r->set_result(this->result);
-        r->set_allocated_score_board(this->score_board.toProto());
+        r->set_allocated_score_board(this->score_board.toProtoAllocated());
         return r;
     }
 
@@ -135,11 +149,17 @@ public:
         return this->player_info;
     }
 
-    inline libnetwork::ClientConnectionResponse* toProto() {
+    inline void toProto(libnetwork::ClientConnectionResponse& r) {
+        r.set_result(this->result);
+        r.set_detail(this->detail);
+        r.set_allocated_player_info(this->player_info.toProtoAllocated());
+    }
+
+    inline libnetwork::ClientConnectionResponse* toProtoAllocated() {
         auto r = new libnetwork::ClientConnectionResponse();
         r->set_result(this->result);
         r->set_detail(this->detail);
-        r->set_allocated_player_info(this->player_info.toProto());
+        r->set_allocated_player_info(this->player_info.toProtoAllocated());
         return r;
     }
 
