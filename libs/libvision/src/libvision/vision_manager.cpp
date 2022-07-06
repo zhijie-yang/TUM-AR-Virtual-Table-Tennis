@@ -1,71 +1,197 @@
 #include "libvision/vision_manager.hpp"
-
+#include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+#include <opencv2/highgui/highgui.hpp>
+#include <tuple>
+#include <opencv2/calib3d.hpp>
+#include <glm/glm.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
 #include <iostream>
 
 using namespace libvision;
-
+#define CENTER_MAREKER_ID 23
+#define RACKET_MAREKER_ID 40
+#define MARKERS_NUM 3
+#define VIEW_POINTS 8
 class vision_manager::impl {
 private:
-    cv::VideoCapture _cap;
-    cv::Mat _frame;
+	cv::VideoCapture _cap;
+	cv::Mat _frame;
+	cv::Mat _cameraMatrix, _distCoeffs;
+	glm::mat4 _result;
+	cv::Ptr<cv::aruco::Dictionary> _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+	cv::Ptr<cv::aruco::DetectorParameters> _parameters = cv::aruco::DetectorParameters::create();
+	std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
+	std::vector<int> _markerIds;
+	cv::Ptr<cv::aruco::Board> _board;
+	tuple<cv::Matx31d, cv::Matx31d> _inversePerspective(cv::Matx31d rvec, cv::Matx31d tvec) {
+		cv::Matx33d rmat;
+		cv::Rodrigues(rvec, rmat);
+		rmat = rmat.t();
+		cv::Matx31d invtvec = rmat * (-tvec);
+		cv::Matx31d invrvec;
+		cv::Rodrigues(rmat, invrvec);
+		return std::make_tuple(invrvec, invtvec);
+	}
+
 public:
-    impl() : _cap{}
-    {}
-    ~impl() = default;
+	impl() : _cap{}
+	{}
+	~impl() = default;
 
-    int capture_width_get() const
-    {
-        return (int)_cap.get(cv::CAP_PROP_FRAME_WIDTH);
-    }
+	int capture_width_get() const
+	{
+		return (int)_cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	}
 
-    int capture_height_get() const
-    {
-        return (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-    }
+	int capture_height_get() const
+	{
+		return (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	}
 
-    int capture_serialize(const std::function<int(void*, int)>& processor)
-    {
-        return processor((void*)_frame.ptr(), _frame.rows * _frame.cols * _frame.channels());
-    }
+	int capture_serialize(const std::function<int(void*, int)>& processor)
+	{
+		return processor((void*)_frame.ptr(), _frame.rows * _frame.cols * _frame.channels());
+	}
 
-    int init(const vision_settings& settings)
-    {
-        _cap.open(settings.camera_id);
+	int init(const vision_settings& settings)
+	{
+		_cap.open(settings.camera_id);
 
-        if (!_cap.isOpened())
-        {
-            std::cerr << "***Could not initialize capturing...***" << std::endl;
-            return -1;
-        }
+		if (!_cap.isOpened())
+		{
+			std::cerr << "***Could not initialize capturing...***" << std::endl;
+			return -1;
+		}
 
-        return 0;
-    }
+		return 0;
+	}
+	int create_board()
+	{
+		cv::Mat markerImage;
+		std::vector<int> markerIds;
+		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+		cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+		std::vector<std::vector<cv::Point3f>> objectPoints(3);
+		markerImage = cv::imread("marker.png");
+		cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+		float middle_x;
+		float middle_y;
 
-    int run_tick()
-    {
-        _cap >> _frame;
+		middle_x = (markerCorners[1][0].x + markerCorners[1][1].x + markerCorners[1][2].x + markerCorners[1][3].x) / 4;
+		middle_y = (markerCorners[1][0].y + markerCorners[1][1].y + markerCorners[1][2].y + markerCorners[1][3].y) / 4;
 
-        if (_frame.empty())
-        {
-            std::cerr << "Failed to capture frame";
-            return -1;
-        }
+		for (size_t i = 0; i < MARKERS_NUM; i++)
+		{
+			objectPoints[i].push_back(Point3f(markerCorners[i][0].x - middle_x, markerCorners[i][0].y - middle_y, 0.0));
+			objectPoints[i].push_back(Point3f(markerCorners[i][1].x - middle_x, markerCorners[i][1].y - middle_y, 0.0));
+			objectPoints[i].push_back(Point3f(markerCorners[i][2].x - middle_x, markerCorners[i][2].y - middle_y, 0.0));
+			objectPoints[i].push_back(Point3f(markerCorners[i][3].x - middle_x, markerCorners[i][3].y - middle_y, 0.0));
+		}
+		_board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
+		return 0;
+	}
+	int run_tick()
+	{
+		_cap >> _frame;
 
-        return 0;
-    }
+		if (_frame.empty())
+		{
+			std::cerr << "Failed to capture frame";
+			return -1;
+		}
 
-    int term()
-    {
-        _cap.release();
+		return 0;
+	}
 
-        return 0;
-    }
+	int term()
+	{
+		_cap.release();
+
+		return 0;
+	}
+	int read_calibrate_paras()
+	{
+		FileStorage fs("camera_paras.yml", FileStorage::READ);
+		fs["cameraMatrix"] >> _cameraMatrix;
+		fs["distCoeffs"] >> _distCoeffs;
+		fs.release();
+		return 0;
+	}
+	int detect_markers()
+	{
+		cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
+		if (_markerIds.size() == 0)
+		{
+			std::cerr << "Failed to detect markers";
+			return -1;
+		}
+		return 0;
+	}
+	int estimate_position()
+	{
+		cv::Matx31d rvec, tvec;
+		int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, rvec, tvec);
+		if (valid == 0)
+		{
+			std::cerr << "Estimation failed";
+			return -1;
+		}
+		std::vector<cv::Matx31d> rvecs, tvecs;
+		cv::aruco::estimatePoseSingleMarkers(_markerCorners, 500, _cameraMatrix, _distCoeffs, rvecs, tvecs);
+		bool f_racket = false;
+		cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_srvec, inv_stvec;
+
+		for (size_t i = 0; i < _markerIds.size(); i++)
+		{
+
+			if (_markerIds[i] == RACKET_MAREKER_ID)
+			{
+				srvec = rvecs[i];
+				stvec = tvecs[i];
+				f_racket = true;
+				tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(srvec, stvec);
+				inv_srvec = std::get<0>(t);
+				inv_stvec = std::get<1>(t);
+			}
+		}
+
+		if (f_racket) {
+
+			cv::composeRT(rvec, tvec, inv_srvec, inv_stvec, t_rvec, t_tvec);
+			cv::Matx33d rmat;
+			cv::Rodrigues(t_rvec, rmat);
+			for (size_t i = 0; i < 3; i++)
+			{
+				for (size_t j = 0; j < 3; j++)
+				{
+					_result[j][i] = rmat.val[i + j * 3];
+				}
+				_result[3][i] = 0.0f;
+			}
+			for (size_t j = 0; j < 3; j++)
+			{
+				_result[j][3] = t_tvec.val[j];
+			}
+			_result[3][3] = 1.0f;
+
+		}
+		return 0;
+	}
+
+	glm::mat4 get_transformation_matrix()
+	{
+		return _result;
+	}
+
+
 };
 
 vision_manager::vision_manager()
-    : _impl{ std::make_unique<impl>() }
+	: _impl{ std::make_unique<impl>() }
 {}
 
 vision_manager::~vision_manager()
@@ -98,5 +224,25 @@ int vision_manager::term()
 
 int vision_manager::capture_serialize(const std::function<int(void*, int)>& processor)
 {
-    return _impl->capture_serialize(processor);
+	return _impl->capture_serialize(processor);
+}
+
+int vision_manager::create_board()
+{
+	return _impl->create_board();
+}
+
+int vision_manager::read_calibrate_paras()
+{
+	return _impl->read_calibrate_paras();
+}
+
+int vision_manager::detect_markers()
+{
+	return detect_markers();
+}
+
+int vision_manager::estimate_position()
+{
+	return _impl->estimate_position();
 }
