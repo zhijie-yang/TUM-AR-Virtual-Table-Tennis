@@ -1,3 +1,20 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package libnetwork;
+
+service VirtualTennis {
+    rpc SendBallStatus (BallStatus) returns (GeneralResponse) {}
+    rpc SendRacketStatus (RacketStatus) returns (GeneralResponse) {}
+    rpc SendScoreBoard (ScoreBoard) returns (GeneralResponse) {}
+    rpc ChangeTurn (ChangeTurnRequest) returns (GeneralResponse) {}
+    rpc StartNewRound (StartNewRoundRequest) returns (StartNewRoundResponse) {}
+    rpc EndRound (RoundEndingRequest) returns (RoundEndingResponse) {}
+    rpc Broadcast (ServerBroadcast) returns (google.protobuf.Empty) {}
+    rpc ConnectServer (ClientConnectionRequest) returns (ClientConnectionResponse) {}
+}
+
 message PlayerInfo {
     uint32 player_id = 1;
     string player_name = 2;
@@ -21,53 +38,56 @@ message Velocity {
     double w_z = 6;
 }
 
-message BallStatus {
-    optional uint32 ball_id = 1;
-    Transform pose = 2;
-    Velocity velocity = 3;
-    optional enum status {
-        UNKNOWN = 0;
-        WAITING_START = 1;
-        FLYING = 2;
-        HIT_WITH_RACKET = 3;
-        HIT_WITH_TABLE = 4;
-        HIT_WITH_NET = 5;
-        OUT_OF_BOUND = 6;
-    }
+enum FlyingStatus {
+    UNKNOWN = 0;
+    WAITING_START = 1;
+    FLYING = 2;
+    HIT_WITH_RACKET = 3;
+    HIT_WITH_TABLE = 4;
+    HIT_WITH_NET = 5;
+    OUT_OF_BOUND = 6;
 }
 
-message BallStatusResponse {
-    bool success = 1;
+message BallStatus {
+    uint32 ball_id = 1;
+    Transform pose = 2;
+    Velocity velocity = 3;
+    FlyingStatus flying_status = 4;
+}
+
+// RacketStatusResponse
+// ChangeTurnResponse
+// BallStatusResponse
+// ScoreBoardResponse
+message GeneralResponse {
+    bool result = 1;
+    string detail = 2;
 }
 
 message RacketStatus {
     uint32 player_id = 1;
     Transform pose = 2;
-    optional Velocity velocity = 3;
+    Velocity velocity = 3;
 }
 
-message RacketStatusReponse {
-    bool success = 1;
-}
-
-message ChangeTurn {
+message ChangeTurnRequest {
     uint32 new_id = 1;
 }
 
-message StartNewRound {
-    optional PlayerInfo player_info = 1;
+message StartNewRoundRequest {
+    PlayerInfo player_info = 1;
 }
 
 message StartNewRoundResponse {
-    optional PlayerInfo player_info = 1;
+    PlayerInfo player_info = 1;
 }
 
-message RoundEnding {
+message RoundEndingRequest {
     uint32 winner_id = 1;
 }
 
 message RoundEndingResponse {
-    bool success = 1;
+    bool result = 1;
     ScoreBoard score_board = 2;
 }
 
@@ -76,23 +96,19 @@ message ScoreBoard {
     uint32 player_2_score = 2;
 }
 
-message ScoreBoardResponse {
-    bool success = 1;
-}
-
 message ServerBroadcast {
     string ip_address = 1;
-    optional string host_name = 2;
+    string host_name = 2;
 }
 
 message ClientConnectionRequest {
     string server_ip_address = 1;
     PlayerInfo player_info = 2;
-    optional uint32 port_number = 3;
+    uint32 port_number = 3;
 }
 
-message ClientConnectionReponse {
-    bool is_success = 1;
-    PlayerInfo player_info = 2;
-    optional string respond = 3;
+message ClientConnectionResponse {
+    bool result = 1;
+    string detail = 2;
+    PlayerInfo player_info = 3;
 }

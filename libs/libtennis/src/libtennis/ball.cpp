@@ -1,4 +1,5 @@
 #include "libtennis/ball.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
 const float & libtennis::ball::get_radius() const

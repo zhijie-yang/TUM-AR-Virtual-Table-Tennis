@@ -1,3 +1,5 @@
+add_subdirectory(libframework)
 add_subdirectory(libtennis)
 add_subdirectory(librendering)
 add_subdirectory(libvision)
+# add_subdirectory(libnetwork)

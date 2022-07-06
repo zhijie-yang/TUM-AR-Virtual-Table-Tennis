@@ -12,6 +12,11 @@ Components:
 
 ## Usage
 
+Install dependencies:
+```bash
+sudo apt update && sudo apt install -y libgrpc++-dev protobuf-compiler # For Ubuntu/Debian
+```
+
 Clone the project:
 ```bash
 git clone https://gitlab.com/mcmikecreations/virtualtennis.git
