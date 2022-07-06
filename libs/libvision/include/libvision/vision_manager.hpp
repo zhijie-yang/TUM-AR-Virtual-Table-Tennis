@@ -22,6 +22,7 @@ namespace libvision {
 
 		int init(const vision_settings& settings);
 		int run_tick();
+		int save_calibrate_paras();
 		int term();
 		int read_calibrate_paras();
 		int detect_markers();

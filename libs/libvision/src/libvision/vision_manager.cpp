@@ -12,6 +12,8 @@
 #include <iostream>
 
 using namespace libvision;
+using namespace cv;
+using namespace std;
 #define CENTER_MAREKER_ID 23
 #define RACKET_MAREKER_ID 40
 #define MARKERS_NUM 3
@@ -94,6 +96,7 @@ public:
 		_board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
 		return 0;
 	}
+
 	int run_tick()
 	{
 		_cap >> _frame;
@@ -107,12 +110,65 @@ public:
 		return 0;
 	}
 
+	int save_calibrate_paras() {
+		cv::Mat outputImage;
+		cv::namedWindow("Webcam", cv::WindowFlags::WINDOW_AUTOSIZE);
+		std::vector<int> markerIds;
+		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+		cv::Size imgSize;// camera image size
+		imgSize.height = (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+		imgSize.width = (int)_cap.get(cv::CAP_PROP_FRAME_WIDTH);
+
+		std::vector<std::vector<cv::Point2f>> allCornersConcatenated;
+		std::vector<int> allIdsConcatenated;
+		std::vector<int> markerCounterPerFrame;
+		// Detect aruco board from several viewpoints and fill allCornersConcatenated, allIdsConcatenated and markerCounterPerFrame
+		int count = 0;
+		while (true) {
+			run_tick();
+			cv::imshow("Webcam", _frame);
+			int key = waitKey(1500);
+			if (key == 13)
+			{
+
+				cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
+				cv::imshow("Webcam", _frame);
+				allCornersConcatenated.insert(
+					allCornersConcatenated.end(),
+					std::make_move_iterator(markerCorners.begin()),
+					std::make_move_iterator(markerCorners.end())
+				);
+				allIdsConcatenated.insert(
+					allIdsConcatenated.end(),
+					std::make_move_iterator(markerIds.begin()),
+					std::make_move_iterator(markerIds.end())
+				);
+				markerCounterPerFrame.push_back((int)markerIds.size());
+				count++;
+			}
+			if (count == VIEW_POINTS)
+			{
+				break;
+			}
+
+		}
+
+		// After capturing in several viewpoints, start calibration
+		std::vector<cv::Mat> rvecs, tvecs;
+		double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, _board, imgSize, _cameraMatrix, _distCoeffs, rvecs, tvecs);
+		FileStorage fs("camera_paras.yml", FileStorage::WRITE);
+		fs << "cameraMatrix" << _cameraMatrix << "distCoeffs" << _distCoeffs;
+		fs.release();
+		return 0;
+	}
+
 	int term()
 	{
 		_cap.release();
 
 		return 0;
 	}
+
 	int read_calibrate_paras()
 	{
 		FileStorage fs("camera_paras.yml", FileStorage::READ);
@@ -121,6 +177,7 @@ public:
 		fs.release();
 		return 0;
 	}
+
 	int detect_markers()
 	{
 		cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
@@ -131,6 +188,7 @@ public:
 		}
 		return 0;
 	}
+
 	int estimate_position()
 	{
 		cv::Matx31d rvec, tvec;
@@ -217,6 +275,11 @@ int vision_manager::run_tick()
 	return _impl->run_tick();
 }
 
+int vision_manager::save_calibrate_paras()
+{
+	return _impl->save_calibrate_paras();
+}
+
 int vision_manager::term()
 {
 	return _impl->term();
@@ -239,7 +302,7 @@ int vision_manager::read_calibrate_paras()
 
 int vision_manager::detect_markers()
 {
-	return detect_markers();
+	return _impl->detect_markers();
 }
 
 int vision_manager::estimate_position()
