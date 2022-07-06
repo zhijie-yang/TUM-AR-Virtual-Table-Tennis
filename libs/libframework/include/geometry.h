@@ -8,9 +8,9 @@
 
 class Transform {
 public:
-    Transform();
+    Transform(){}
     Transform(glm::mat4 const& m) {this->transform = m;}
-    ~Transform();
+    ~Transform(){}
 
 private:
     glm::mat4 transform;
@@ -81,12 +81,12 @@ public:
 
 class Velocity {
 public:
-    Velocity();
+    Velocity(){}
     Velocity (glm::vec3 const& linear, glm::vec3 const& angular) {
         this->linear = linear;
         this->angular = angular;
     }
-    ~Velocity();
+    ~Velocity(){}
 
 private:
     glm::vec3 linear;

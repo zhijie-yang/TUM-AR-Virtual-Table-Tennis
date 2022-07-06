@@ -5,8 +5,6 @@ cmake_minimum_required(VERSION 3.13)
 find_package(Protobuf REQUIRED)
 # find_package(gRPC_GRPC++ REQUIRED)
 # add_library()
-# link_directories(/usr/lib)
-# find_package(framework REQUIRED)
 find_library(PROTOBUF protobuf REQUIRED)
 find_library(GRPC grpc REQUIRED)
 find_library(GRPC++ grpc++ REQUIRED)
@@ -51,61 +49,78 @@ add_custom_command(
     DEPENDS ${PROTO_FILE}
 )
 
+
+message(${LIBS})
+# add_library(framework INTERFACE)
+
+# target_include_directories(
+#     FRAMEWORK
+#     INTERFACE $<BUILD_INTERFACE:${FRAMEWORK_INCLUDE_DIR}>
+#               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+# )
+
+target_include_directories(
+    framework
+    INTERFACE ${FRAMEWORK_INCLUDE_DIR}
+)
+
+
+
 include_directories(${PROTO_SRC_DIR})
 
-add_library(${PROJECT_NAME}
-	src/lib${PROJECT_NAME}/server.cpp
-    src/lib${PROJECT_NAME}/client.cpp
+add_library(${PROJECT_NAME}_grpc_handler
     ${PROTO_SRC_DIR}/network.grpc.pb.h
     ${PROTO_SRC_DIR}/network.grpc.pb.cc
+)
+
+add_library(${PROJECT_NAME}_protobuf
     ${PROTO_SRC_DIR}/network.pb.h
     ${PROTO_SRC_DIR}/network.pb.cc
 )
 
 include_directories(${LIBS})
 
-add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+# add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-target_link_libraries(${PROJECT_NAME}
-	PUBLIC
-    glm
-    protobuf::libprotobuf
-    GRPC
-	GRPC++
-    GRPC++_REFLECTION
-    PROTOBUF_LIBPROTOBUF
-    framework
-)
+# target_link_libraries(${PROJECT_NAME}
+# 	PUBLIC
+#     glm
+#     GRPC
+# 	GRPC++
+#     GRPC++_REFLECTION
+#     framework
+#     ${PROJECT_NAME}_grpc_handler
+#     ${PROJECT_NAME}_protobuf
+# )
 
-target_include_directories(${PROJECT_NAME}
-	PUBLIC
-		$<INSTALL_INTERFACE:include>
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/src
-)
+# target_include_directories(${PROJECT_NAME}
+# 	PUBLIC
+# 		$<INSTALL_INTERFACE:include>
+# 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# 	PRIVATE
+# 		${CMAKE_CURRENT_SOURCE_DIR}/src
+# )
 
-target_compile_features(${PROJECT_NAME}
-	PRIVATE
-		cxx_std_11
-)
+# target_compile_features(${PROJECT_NAME}
+# 	PRIVATE
+# 		cxx_std_11
+# )
+
 
 add_executable(${PROJECT_NAME}_client
     src/lib${PROJECT_NAME}/client.cpp
-    ${PROTO_SRC_DIR}/network.grpc.pb.h
-    ${PROTO_SRC_DIR}/network.grpc.pb.cc
-    ${PROTO_SRC_DIR}/network.pb.h
-    ${PROTO_SRC_DIR}/network.pb.cc
 )
 
 target_link_libraries(${PROJECT_NAME}_client
     PUBLIC
     glm
-    ${Protobuf}
+    ${PROTOBUF}
     ${GRPC}
     ${GRPC++}
     ${GRPC++_REFLECTION}
-    framework
+    ${PROJECT_NAME}_grpc_handler
+    ${PROJECT_NAME}_protobuf
+    ${framework}
 )
 
 add_executable(${PROJECT_NAME}_server
@@ -115,11 +130,12 @@ add_executable(${PROJECT_NAME}_server
 target_link_libraries(${PROJECT_NAME}_server
     PUBLIC
     glm
-    Protobuf
-    GRPC
-    GRPC++
-    GRPC++_REFLECTION
-    framework
+    ${PROTOBUF}
+    ${GRPC}
+    ${GRPC++}
+    ${GRPC++_REFLECTION}
+    ${PROJECT_NAME}_grpc_handler
+    ${PROJECT_NAME}_protobuf
 )
 
 # if(BUILD_TESTING)

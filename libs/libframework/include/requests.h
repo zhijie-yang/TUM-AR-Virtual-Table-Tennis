@@ -7,11 +7,11 @@
 
 class ChangeTurnRequest {
 public:
-    ChangeTurnRequest();
+    ChangeTurnRequest(){}
     ChangeTurnRequest(unsigned const& new_id) {
         this->new_id = new_id;
     }
-    ~ChangeTurnRequest();
+    ~ChangeTurnRequest(){}
 
 private:
     unsigned new_id;
@@ -38,11 +38,11 @@ public:
 
 class StartNewRoundRequest {
 public:
-    StartNewRoundRequest();
+    StartNewRoundRequest(){}
     StartNewRoundRequest(PlayerInfo const& player_info) {
         this->player_info = player_info;
     }
-    ~StartNewRoundRequest();
+    ~StartNewRoundRequest(){}
 
 private:
     PlayerInfo player_info;
@@ -69,11 +69,11 @@ public:
 
 class RoundEndingRequest {
 public:
-    RoundEndingRequest();
+    RoundEndingRequest(){}
     RoundEndingRequest(unsigned const& winner_id) {
         this->winner_id = winner_id;
     }
-    ~RoundEndingRequest();
+    ~RoundEndingRequest(){}
 
 private:
     unsigned winner_id;
@@ -102,14 +102,14 @@ public:
 
 class ClientConnectionRequest {
 public:
-    ClientConnectionRequest();
+    ClientConnectionRequest(){}
     ClientConnectionRequest(std::string const& server_ip,
                             PlayerInfo const& player_info, unsigned const& port_number) {
         this->server_ip_address = server_ip;
         this->player_info = player_info;
         this->port_number = port_number;
     }
-    ~ClientConnectionRequest();
+    ~ClientConnectionRequest(){}
 
 private:
     std::string server_ip_address;

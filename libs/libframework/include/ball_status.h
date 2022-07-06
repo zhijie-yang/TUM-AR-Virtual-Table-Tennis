@@ -16,7 +16,7 @@ enum FlyingStatus {
 
 class BallStatus {
 public:
-    BallStatus();
+    BallStatus(){}
     BallStatus(unsigned const& ball_id, Transform const& pose,
                Velocity const& velocity, unsigned const& flying_status) {
         this->ball_id = ball_id;
@@ -24,7 +24,7 @@ public:
         this->velocity = velocity;
         this->flying_status = static_cast<FlyingStatus>(flying_status);
     }
-    ~BallStatus();
+    ~BallStatus(){}
 
 private:
     unsigned ball_id;

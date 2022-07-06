@@ -6,12 +6,12 @@
 
 class GeneralResponse {
 public:
-    GeneralResponse();
+    GeneralResponse(){}
     GeneralResponse(bool const& result, std::string const& detail) {
         this->result = result;
         this->detail = detail;
     }
-    ~GeneralResponse();
+    ~GeneralResponse(){}
 
 private:
     bool result;
@@ -47,11 +47,11 @@ public:
 
 class StartNewRoundResponse {
 public:
-    StartNewRoundResponse();
+    StartNewRoundResponse(){}
     StartNewRoundResponse(PlayerInfo const& player_info) {
         this->player_info = player_info;
     }
-    ~StartNewRoundResponse();
+    ~StartNewRoundResponse(){}
 
 private:
     PlayerInfo player_info;
@@ -82,12 +82,12 @@ public:
 
 class RoundEndingResponse {
 public:
-    RoundEndingResponse();
+    RoundEndingResponse(){}
     RoundEndingResponse(bool const& result, ScoreBoard const& score_board) {
         this->result = result;
         this->score_board = score_board;
     }
-    ~RoundEndingResponse();
+    ~RoundEndingResponse(){}
 
 private:
     bool result;
@@ -123,13 +123,13 @@ public:
 
 class ClientConnectionResponse {
 public:
-    ClientConnectionResponse();
+    ClientConnectionResponse(){}
     ClientConnectionResponse(bool const& result, std::string const& detail, PlayerInfo const& player_info) {
         this->result = result;
         this->detail = detail;
         this->player_info = player_info;
     }
-    ~ClientConnectionResponse();
+    ~ClientConnectionResponse(){}
 
 private:
     bool result;
