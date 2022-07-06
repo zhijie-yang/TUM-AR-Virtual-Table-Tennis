@@ -15,11 +15,6 @@ message(${GRPC++})
 message(${GRPC++_REFLECTION})
 find_program(CRPC_CPP_PLUGIN grpc_cpp_plugin)
 
-# Set LIBS and use it to source framework headers
-set(LIBS
-    ${CMAKE_SOURCE_DIR}/libs
-)
-
 set(PROTOS
     ${CMAKE_CURRENT_SOURCE_DIR}/proto/network.proto
 )
@@ -49,8 +44,6 @@ add_custom_command(
     DEPENDS ${PROTO_FILE}
 )
 
-
-message(${LIBS})
 # add_library(framework INTERFACE)
 
 # target_include_directories(
@@ -78,6 +71,11 @@ add_library(${PROJECT_NAME}_protobuf
     ${PROTO_SRC_DIR}/network.pb.cc
 )
 
+# Set LIBS and use it to source libframework headers
+set(LIBS
+    ${CMAKE_SOURCE_DIR}/libs
+)
+# Add libframework headers to include path
 include_directories(${LIBS})
 
 # add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
@@ -120,7 +118,6 @@ target_link_libraries(${PROJECT_NAME}_client
     ${GRPC++_REFLECTION}
     ${PROJECT_NAME}_grpc_handler
     ${PROJECT_NAME}_protobuf
-    ${framework}
 )
 
 add_executable(${PROJECT_NAME}_server
