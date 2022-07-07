@@ -22,3 +22,6 @@
 [submodule "vendor/zlib"]
 	path = vendor/zlib
 	url = git@github.com:madler/zlib.git
+[submodule "vendor/rxcpp"]
+	path = vendor/rxcpp
+	url = git@github.com:ReactiveX/RxCpp.git
