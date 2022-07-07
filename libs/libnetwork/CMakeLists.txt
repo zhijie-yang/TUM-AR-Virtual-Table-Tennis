@@ -27,22 +27,22 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 set(GRPC_COMP protoc)
 
 add_custom_command(
+    OUTPUT ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
+    COMMAND ${GRPC_COMP}
+    ARGS -I ${PROTO_FILE_DIR}
+      --cpp_out ${PROTO_SRC_DIR}
+      ${PROTO_FILE}
+    DEPENDS ${PROTO_FILE}
+)
+
+add_custom_command(
     OUTPUT ${PROTO_SRC_DIR}/network.grpc.pb.h ${PROTO_SRC_DIR}/network.grpc.pb.cc
     COMMAND ${GRPC_COMP}
     ARGS -I ${PROTO_FILE_DIR}
       --grpc_out ${PROTO_SRC_DIR}
       --plugin=protoc-gen-grpc=${CRPC_CPP_PLUGIN}
       ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE}
-)
-
-add_custom_command(
-    OUTPUT ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
-    COMMAND ${GRPC_COMP}
-    ARGS --cpp_out ${PROTO_SRC_DIR}
-      -I ${PROTO_FILE_DIR}
-      ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE}
+    DEPENDS ${PROTO_FILE} ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
 )
 
 # add_library(framework INTERFACE)
