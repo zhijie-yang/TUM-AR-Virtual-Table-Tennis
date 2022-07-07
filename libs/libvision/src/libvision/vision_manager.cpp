@@ -199,9 +199,9 @@ public:
 			return -1;
 		}
 		std::vector<cv::Matx31d> rvecs, tvecs;
-		cv::aruco::estimatePoseSingleMarkers(_markerCorners, 500, _cameraMatrix, _distCoeffs, rvecs, tvecs);
+		cv::aruco::estimatePoseSingleMarkers(_markerCorners, 50, _cameraMatrix, _distCoeffs, rvecs, tvecs);
 		bool f_racket = false;
-		cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_srvec, inv_stvec;
+		cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
 
 		for (size_t i = 0; i < _markerIds.size(); i++)
 		{
@@ -211,15 +211,15 @@ public:
 				srvec = rvecs[i];
 				stvec = tvecs[i];
 				f_racket = true;
-				tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(srvec, stvec);
-				inv_srvec = std::get<0>(t);
-				inv_stvec = std::get<1>(t);
+				tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(rvec, tvec);
+				inv_rvec = std::get<0>(t);
+				inv_tvec = std::get<1>(t);
 			}
 		}
 
 		if (f_racket) {
 
-			cv::composeRT(rvec, tvec, inv_srvec, inv_stvec, t_rvec, t_tvec);
+			cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
 			cv::Matx33d rmat;
 			cv::Rodrigues(t_rvec, rmat);
 			for (size_t i = 0; i < 3; i++)
