@@ -78,7 +78,7 @@ public:
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 		cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
 		std::vector<std::vector<cv::Point3f>> objectPoints(3);
-		markerImage = cv::imread("marker.png");
+		markerImage = cv::imread("data/marker.png");
 		cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 		float middle_x;
 		float middle_y;
