@@ -226,13 +226,13 @@ public:
 			{
 				for (size_t j = 0; j < 3; j++)
 				{
-					_result[j][i] = rmat.val[i + j * 3];
+					_result[i][j] = rmat.val[i + j * 3];
 				}
-				_result[3][i] = 0.0f;
+				_result[i][3] = 0.0f;
 			}
 			for (size_t j = 0; j < 3; j++)
 			{
-				_result[j][3] = t_tvec.val[j];
+				_result[3][j] = t_tvec.val[j];
 			}
 			_result[3][3] = 1.0f;
 
