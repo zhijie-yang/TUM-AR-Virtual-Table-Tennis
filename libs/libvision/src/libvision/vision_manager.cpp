@@ -29,49 +29,8 @@ private:
 	std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
 	std::vector<int> _markerIds;
 	cv::Ptr<cv::aruco::Board> _board;
-	tuple<cv::Matx31d, cv::Matx31d> _inversePerspective(cv::Matx31d rvec, cv::Matx31d tvec) {
-		cv::Matx33d rmat;
-		cv::Rodrigues(rvec, rmat);
-		rmat = rmat.t();
-		cv::Matx31d invtvec = rmat * (-tvec);
-		cv::Matx31d invrvec;
-		cv::Rodrigues(rmat, invrvec);
-		return std::make_tuple(invrvec, invtvec);
-	}
 
-public:
-	impl() : _cap{}
-	{}
-	~impl() = default;
-
-	int capture_width_get() const
-	{
-		return (int)_cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	}
-
-	int capture_height_get() const
-	{
-		return (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-	}
-
-	int capture_serialize(const std::function<int(void*, int)>& processor)
-	{
-		return processor((void*)_frame.ptr(), _frame.rows * _frame.cols * _frame.channels());
-	}
-
-	int init(const vision_settings& settings)
-	{
-		_cap.open(settings.camera_id);
-
-		if (!_cap.isOpened())
-		{
-			std::cerr << "***Could not initialize capturing...***" << std::endl;
-			return -1;
-		}
-
-		return 0;
-	}
-	int create_board()
+	int _create_board()
 	{
 		cv::Mat markerImage;
 		std::vector<int> markerIds;
@@ -97,20 +56,8 @@ public:
 		return 0;
 	}
 
-	int run_tick()
+	int _save_calibrate_paras()
 	{
-		_cap >> _frame;
-
-		if (_frame.empty())
-		{
-			std::cerr << "Failed to capture frame";
-			return -1;
-		}
-
-		return 0;
-	}
-
-	int save_calibrate_paras() {
 		cv::Mat outputImage;
 		cv::namedWindow("Webcam", cv::WindowFlags::WINDOW_AUTOSIZE);
 		std::vector<int> markerIds;
@@ -162,14 +109,7 @@ public:
 		return 0;
 	}
 
-	int term()
-	{
-		_cap.release();
-
-		return 0;
-	}
-
-	int read_calibrate_paras()
+	int _read_calibrate_paras()
 	{
 		FileStorage fs("camera_paras.yml", FileStorage::READ);
 		fs["cameraMatrix"] >> _cameraMatrix;
@@ -178,7 +118,17 @@ public:
 		return 0;
 	}
 
-	int detect_markers()
+	tuple<cv::Matx31d, cv::Matx31d> _inversePerspective(cv::Matx31d rvec, cv::Matx31d tvec) {
+		cv::Matx33d rmat;
+		cv::Rodrigues(rvec, rmat);
+		rmat = rmat.t();
+		cv::Matx31d invtvec = rmat * (-tvec);
+		cv::Matx31d invrvec;
+		cv::Rodrigues(rmat, invrvec);
+		return std::make_tuple(invrvec, invtvec);
+	}
+
+	int _detect_markers()
 	{
 		cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
 		if (_markerIds.size() == 0)
@@ -189,7 +139,7 @@ public:
 		return 0;
 	}
 
-	int estimate_position()
+	int _estimate_position()
 	{
 		cv::Matx31d rvec, tvec;
 		int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, rvec, tvec);
@@ -240,6 +190,62 @@ public:
 		return 0;
 	}
 
+public:
+	impl() : _cap{}
+	{}
+	~impl() = default;
+
+	int capture_width_get() const
+	{
+		return (int)_cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	}
+
+	int capture_height_get() const
+	{
+		return (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	}
+
+	int capture_serialize(const std::function<int(void*, int)>& processor)
+	{
+		return processor((void*)_frame.ptr(), _frame.rows * _frame.cols * _frame.channels());
+	}
+
+	int init(const vision_settings& settings)
+	{
+		_cap.open(settings.camera_id);
+
+		if (!_cap.isOpened())
+		{
+			std::cerr << "***Could not initialize capturing...***" << std::endl;
+			return -1;
+		}
+		_create_board();
+		_save_calibrate_paras();
+		_read_calibrate_paras();
+		return 0;
+	}
+
+	int run_tick()
+	{
+		_cap >> _frame;
+
+		if (_frame.empty())
+		{
+			std::cerr << "Failed to capture frame";
+			return -1;
+		}
+		_detect_markers();
+		_estimate_position();
+		return 0;
+	}
+
+	int term()
+	{
+		_cap.release();
+
+		return 0;
+	}
+
 	glm::mat4 get_transformation_matrix()
 	{
 		return _result;
@@ -275,11 +281,6 @@ int vision_manager::run_tick()
 	return _impl->run_tick();
 }
 
-int vision_manager::save_calibrate_paras()
-{
-	return _impl->save_calibrate_paras();
-}
-
 int vision_manager::term()
 {
 	return _impl->term();
@@ -290,22 +291,3 @@ int vision_manager::capture_serialize(const std::function<int(void*, int)>& proc
 	return _impl->capture_serialize(processor);
 }
 
-int vision_manager::create_board()
-{
-	return _impl->create_board();
-}
-
-int vision_manager::read_calibrate_paras()
-{
-	return _impl->read_calibrate_paras();
-}
-
-int vision_manager::detect_markers()
-{
-	return _impl->detect_markers();
-}
-
-int vision_manager::estimate_position()
-{
-	return _impl->estimate_position();
-}
