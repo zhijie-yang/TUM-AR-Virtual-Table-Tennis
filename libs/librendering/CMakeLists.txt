@@ -50,7 +50,7 @@ target_include_directories(GLAD
 )
 target_link_libraries(GLAD OpenGL::GL)
 
-set(LIBS ${LIBS} glfw STB_IMAGE GLAD assimp)
+set(LIBS ${LIBS} glfw STB_IMAGE GLAD assimp rxcpp)
 
 list(APPEND IMGUI_SRC "../../vendor/imgui/backends/imgui_impl_glfw.cpp" "../../vendor/imgui/backends/imgui_impl_opengl3.cpp")
 list(APPEND IMGUI_INC "../../vendor/imgui/backends/imgui_impl_glfw.h" "../../vendor/imgui/backends/imgui_impl_opengl3.h")

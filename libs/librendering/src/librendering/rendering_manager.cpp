@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -16,6 +17,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+#include <rxcpp/rx.hpp>
 
 #include <librendering/filesystem.h>
 #include <librendering/shader_m.h>
@@ -49,16 +52,37 @@ private:
     glm::mat4 _racket1Model;
     glm::mat4 _racket2Model;
     glm::mat4 _ballModel;
+    glm::mat4 _tableModel;
     glm::mat4 _view;
     glm::mat4 _proj;
 
     std::unique_ptr<Model> _ballObject;
     std::unique_ptr<Model> _racketObject;
+    std::unique_ptr<Model> _tableObject;
 
     bool _freeCamEnabled;
 	bool _paused;
 	bool _quit;
     rendering_settings _settings;
+
+    int _match1, _match2;
+    int _score1, _score2;
+
+    float _deltaTime;
+
+    rxcpp::rxsub::subject<float> _update;
+    rxcpp::subscriber<float> _updateSub;
+    rxcpp::observable<float> _updateObs;
+
+    rxcpp::composite_subscription _uiDisp, _frameDisp, _modelDisp;
+
+    std::string _popupData;
+    float _popupDuration;
+
+    char _ipAddress[256] = "127.0.0.1";
+    int _port = 5599;
+    
+    rendering_manager::scene _scene;
 public:
     // camera
     Camera camera;
@@ -76,19 +100,23 @@ public:
         _window{nullptr},
         _paused{ false }, _quit{ false },
         _frameTextureId{0}, _frameVerticesId{0},
-        _settings{}
+        _settings{}, _scene(rendering_manager::scene::main_menu),
+        _update{}, _updateSub{_update.get_subscriber()}, _updateObs{_update.get_observable()},
+        _popupDuration{ -1.f },
+        _match1{0}, _match2{0}, _score1{0}, _score2{0}
     {
         _instance = this;
     }
     ~impl() = default;
 
-	bool quit_get() const
-    {
-        return _quit;
-    }
+#pragma region Properties
 
-	void quit_set()
-    {
+    scene scene_get() const { return _scene; }
+    void scene_set(scene value) { _scene = value; }
+
+	bool quit_get() const { return _quit; }
+
+	void quit_set() {
         _quit = true;
     }
 
@@ -129,6 +157,15 @@ public:
         };
     }
 
+    std::function<int(const glm::mat4&)> table_deserialize()
+    {
+        return [&](const glm::mat4& value) -> int
+        {
+            _tableModel = value;
+            return 0;
+        };
+    }
+
     std::function<int(const glm::mat4&)> view_deserialize()
     {
         return [&](const glm::mat4& value) -> int
@@ -147,6 +184,54 @@ public:
         };
     }
 
+    std::function<int(const int&)> score1_deserialize()
+    {
+        return [&](const int& value) -> int
+        {
+            _score1 = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const int&)> score2_deserialize()
+    {
+        return [&](const int& value) -> int
+        {
+            _score2 = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const int&)> match1_deserialize()
+    {
+        return [&](const int& value) -> int
+        {
+            if (value != _match1) {
+                std::stringstream ss;
+                ss << "The match has ended. Current score is " << value << " to " << _match2;
+                _popupData = ss.str();
+                _popupDuration = _settings.popup_timeout;
+            }
+            _match1 = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const int&)> match2_deserialize()
+    {
+        return [&](const int& value) -> int
+        {
+            if (value != _match2) {
+                std::stringstream ss;
+                ss << "The match has ended. Current score is " << _match1 << " to " << value;
+                _popupData = ss.str();
+                _popupDuration = _settings.popup_timeout;
+            }
+            _match2 = value;
+            return 0;
+        };
+    }
+
     std::function<int(void*, int, int, int)> capture_deserialize()
     {
         return [&](void* data, int rows, int cols, int channels) -> int
@@ -156,6 +241,15 @@ public:
             return 0;
         };
     }
+
+    int frametime_serialize(const std::function<int(float)>& processor)
+    {
+        return processor(_deltaTime);
+    }
+
+#pragma region Properties
+
+#pragma region Init
 
 	int init(const rendering_settings& settings)
     {
@@ -176,6 +270,8 @@ public:
         _ballModel = glm::translate(_ballModel, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         _ballModel = glm::scale(_ballModel, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         _racket1Model = _racket2Model = _ballModel;
+
+        _tableModel = glm::scale(glm::vec3(0.7625f, 1.37f, 0.07625f));
 
         // ---------------------------------------
         // GLFW Initialization
@@ -216,13 +312,80 @@ public:
 
         glEnable(GL_DEPTH_TEST);
 
-        ourShader = std::make_unique<Shader>("data/1.model_loading.vs", "data/1.model_loading.fs");
-        _racketObject = std::make_unique<Model>("data/racket.fbx");
-        _ballObject = std::make_unique<Model>("data/ball.fbx");
-
         // ---------------------------------------
         // Frame Initialization
         // ---------------------------------------
+        if (init_frame(settings)) {
+            std::cerr << "Failed to init frame.\n";
+            return 1;
+        }
+
+        // ---------------------------------------
+        // Model Initialization
+        // ---------------------------------------
+        if (init_model(settings)) {
+            std::cerr << "Failed to init model.\n";
+            return 1;
+        }
+
+        // ---------------------------------------
+        // ImGUI Initialization
+        // ---------------------------------------
+        if (init_ui(glsl_version)) {
+            std::cerr << "Failed to init UI.\n";
+            return 1;
+        }
+
+        return 0;
+    }
+
+    int init_model(const rendering_settings& settings)
+    {
+        ourShader = std::make_unique<Shader>("data/1.model_loading.vs", "data/1.model_loading.fs");
+        _racketObject = std::make_unique<Model>("data/racket.fbx");
+        _ballObject = std::make_unique<Model>("data/ball.fbx");
+        _tableObject = std::make_unique<Model>("data/table.fbx");
+
+        _modelDisp = _updateObs.subscribe([&](float delta)
+            {
+                if (_scene != rendering_manager::scene::level) return;
+
+                // don't forget to enable shader before setting uniforms
+                ourShader->use();
+
+                // view/projection transformations
+                glm::mat4 view;
+                if (_freeCamEnabled)
+                {
+                    view = camera.GetViewMatrix();
+                }
+                else
+                {
+                    view = _view;
+                }
+                ourShader->setMat4("projection", _proj);
+                ourShader->setMat4("view", view);
+
+                // render the loaded model
+                ourShader->setMat4("model", _ballModel);
+                _ballObject->Draw(*ourShader);
+                ourShader->setMat4("model", _racket1Model);
+                _racketObject->Draw(*ourShader);
+                ourShader->setMat4("model", _racket2Model);
+                _racketObject->Draw(*ourShader);
+
+                auto tableModel = glm::mat4(1.f);
+                tableModel = glm::rotate(tableModel, glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
+                tableModel *= _tableModel;
+                ourShader->setMat4("model", tableModel);
+                _tableObject->Draw(*ourShader);
+            });
+
+        return 0;
+    }
+
+    int init_frame(const rendering_settings& settings)
+    {
         glGenVertexArrays(1, &_frameVerticesId);
         glBindVertexArray(_frameVerticesId);
         static const GLfloat g_vertex_buffer_data[] = {
@@ -274,9 +437,45 @@ public:
             data);                  // The actual image data itself
         delete[] data;
 
-        // ---------------------------------------
-        // ImGUI Initialization
-        // ---------------------------------------
+        _frameDisp = _updateObs.subscribe([&](float delta)
+            {
+                if (_scene != rendering_manager::scene::level) return;
+
+                _frameShader->use();
+
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
+                glVertexAttribPointer(
+                    0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                    3,                  // size
+                    GL_FLOAT,           // type
+                    GL_FALSE,           // normalized?
+                    0,                  // stride
+                    (void*)0            // array buffer offset
+                );
+                glEnableVertexAttribArray(1);
+                glBindBuffer(GL_ARRAY_BUFFER, _frameUVsBufferId);
+                glVertexAttribPointer(
+                    1,                  // attribute 1.
+                    2,                  // size
+                    GL_FLOAT,           // type
+                    GL_FALSE,           // normalized?
+                    0,                  // stride
+                    (void*)0            // array buffer offset
+                );
+                glBindTexture(GL_TEXTURE_2D, _frameTextureId);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(1);
+                glDisableVertexAttribArray(0);
+
+                glClear(GL_DEPTH_BUFFER_BIT);
+            });
+
+        return 0;
+    }
+
+    int init_ui(const char* glsl_version)
+    {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
@@ -287,8 +486,99 @@ public:
         std::cout << "\tESC - quit the program" << std::endl;
         std::cout << "\tp - pause video" << std::endl;
 
+        ImGuiIO& io = ImGui::GetIO();
+
+        _uiDisp = _updateObs.subscribe([&](float delta)
+            {
+                // Start the Dear ImGui frame
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+
+                _popupDuration -= delta;
+                if (_popupDuration < 0.f) {
+                    _popupDuration = -1.f;
+                }
+                if (_popupDuration >= 0.f) {
+                    ImGui::SetNextWindowPos(ImVec2());
+                    ImGui::Begin("Hey!");
+
+                    ImGui::Text(_popupData.c_str());
+
+                    ImGui::End();
+                }
+
+                ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                switch (_scene) {
+                    case rendering_manager::scene::main_menu:
+                    {
+                        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                        ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+                        ImGui::Text("Welcome to Virtual AR Tennis!");
+
+                        auto& style = ImGui::GetStyle();
+                        auto buttonWidth = ImGui::GetWindowWidth() - style.WindowPadding.x * 2.f;
+                        auto buttonHeight = 0.0f;
+                        
+                        if (ImGui::Button("Play", ImVec2(buttonWidth, buttonHeight))) {
+                            scene_set(rendering_manager::scene::connection);
+                        }
+                        if (ImGui::Button("Exit", ImVec2(buttonWidth, buttonHeight))) {
+                            quit_set();
+                        }
+
+                        ImGui::End();
+                    }
+                    break;
+                    case rendering_manager::scene::connection:
+                    {
+                        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                        ImGui::Begin("Multiplayer Connection", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+                        ImGui::Text("Host or Join a Game!");
+                        ImGui::Text("Enter the IP Address and Port of the host endpoint");
+                        ImGui::Text("Then click \"Host\" or \"Join\".");
+
+                        auto& style = ImGui::GetStyle();
+                        auto buttonWidth = ImGui::GetWindowWidth() - style.WindowPadding.x * 2.f;
+                        auto buttonHeight = 0.0f;
+                        auto padding = style.ItemSpacing.x / 2.f;
+
+                        if (ImGui::InputText("IP Address", _ipAddress, 256)) {}
+                        if (ImGui::InputInt("Port", &_port)) {}
+
+                        if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
+                            // Call networking
+                            scene_set(rendering_manager::scene::level);
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
+                            // Call some more networking
+                            scene_set(rendering_manager::scene::level);
+                        }
+                        if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
+                            scene_set(rendering_manager::scene::main_menu);
+                        }
+
+                        ImGui::End();
+                    }
+                    break;
+                    case rendering_manager::scene::level:
+                    break;
+                    case rendering_manager::scene::ending:
+                    break;
+                }
+
+                // Rendering
+                ImGui::Render();
+
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            });
+
         return 0;
     }
+#pragma endregion Init
 
 	int run_tick()
     {
@@ -298,87 +588,16 @@ public:
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        _deltaTime = deltaTime;
+
         processInput(_window);
 
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        {
-            ImGui::Begin("Main Menu");
-
-            ImGui::Text("Main Menu");
-
-            if (ImGui::Button("Cool")) {
-                //
-            }
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f * deltaTime, 1.f / deltaTime);
-
-            ImGui::End();
-        }
-
-        // Rendering
-        ImGui::Render();
-
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+        glClearColor(1.f, 1.f, 1.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        _frameShader->use();
-
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
-        glVertexAttribPointer(
-            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-            3,                  // size
-            GL_FLOAT,           // type
-            GL_FALSE,           // normalized?
-            0,                  // stride
-            (void*)0            // array buffer offset
-        );
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, _frameUVsBufferId);
-        glVertexAttribPointer(
-            1,                  // attribute 1.
-            2,                  // size
-            GL_FLOAT,           // type
-            GL_FALSE,           // normalized?
-            0,                  // stride
-            (void*)0            // array buffer offset
-        );
-        glBindTexture(GL_TEXTURE_2D, _frameTextureId);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        // don't forget to enable shader before setting uniforms
-        ourShader->use();
-
-        // view/projection transformations
-        glm::mat4 view;
-        if (_freeCamEnabled)
-        {
-            view = camera.GetViewMatrix();
-        }
-        else
-        {
-            view = _view;
-        }
-        ourShader->setMat4("projection", _proj);
-        ourShader->setMat4("view", view);
-
-        // render the loaded model
-        ourShader->setMat4("model", _ballModel);
-        _ballObject->Draw(*ourShader);
-        ourShader->setMat4("model", _racket1Model);
-        _racketObject->Draw(*ourShader);
-        ourShader->setMat4("model", _racket2Model);
-        _racketObject->Draw(*ourShader);
         
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        _updateSub.on_next(_deltaTime);
         
         glfwSwapBuffers(_window);
         glfwPollEvents();
@@ -388,6 +607,10 @@ public:
 
 	int term()
     {
+        _uiDisp.unsubscribe();
+        _modelDisp.unsubscribe();
+        _frameDisp.unsubscribe();
+
         // Cleanup
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -517,20 +740,50 @@ std::function<int(const glm::mat4&)> rendering_manager::proj_deserialize()
 
 std::function<int(const glm::mat4&)> rendering_manager::view_deserialize()
 {
-    return _impl->proj_deserialize();
+    return _impl->view_deserialize();
 }
 
 std::function<int(const glm::mat4&)> rendering_manager::ball_deserialize()
 {
-    return _impl->proj_deserialize();
+    return _impl->ball_deserialize();
 }
 
 std::function<int(const glm::mat4&)> rendering_manager::racket1_deserialize()
 {
-    return _impl->proj_deserialize();
+    return _impl->racket1_deserialize();
 }
 
 std::function<int(const glm::mat4&)> rendering_manager::racket2_deserialize()
 {
-    return _impl->proj_deserialize();
+    return _impl->racket2_deserialize();
+}
+
+std::function<int(const glm::mat4&)> rendering_manager::table_deserialize()
+{
+    return _impl->table_deserialize();
+}
+
+std::function<int(const int&)> rendering_manager::score1_deserialize()
+{
+    return _impl->score1_deserialize();
+}
+
+std::function<int(const int&)> rendering_manager::score2_deserialize()
+{
+    return _impl->score2_deserialize();
+}
+
+std::function<int(const int&)> rendering_manager::match1_deserialize()
+{
+    return _impl->match1_deserialize();
+}
+
+std::function<int(const int&)> rendering_manager::match2_deserialize()
+{
+    return _impl->match2_deserialize();
+}
+
+int rendering_manager::frametime_serialize(const std::function<int(float)>& processor)
+{
+    return _impl->frametime_serialize(processor);
 }

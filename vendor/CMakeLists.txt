@@ -15,3 +15,5 @@ set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
 add_subdirectory(glfw)
 
 add_subdirectory(glm)
+
+add_subdirectory(rxcpp)
