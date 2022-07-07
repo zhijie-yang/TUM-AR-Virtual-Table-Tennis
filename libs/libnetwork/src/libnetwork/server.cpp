@@ -145,6 +145,9 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
     grpc::Status GetBallStatus(ServerContext* context, const libnetwork::BallStatusRequest* request,
                 libnetwork::BallStatus* response) override {
                     auto manager = TennisServerManager::getInstance();
+                    libnetwork::BallStatus _response;
+                    manager->get_ball_status().toProto(_response);
+                    *response = _response;
                     return grpc::Status::OK;
                 }
 };

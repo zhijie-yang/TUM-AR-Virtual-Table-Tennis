@@ -17,8 +17,18 @@ public:
     VirtualTennisNetworkClient(std::shared_ptr<grpc::Channel> channel)
         : stub_(libnetwork::VirtualTennis::NewStub(channel)) {}
 
-
-    GeneralResponse* connectServer(ClientConnectionRequest& _request);
+    GeneralResponse connectServer(ClientConnectionRequest& _request);
+    GeneralResponse disconnectServer();
+    GeneralResponse sendBallStatus(BallStatus& _request);
+    BallStatus getBallStatus();
+    GeneralResponse sendRacketStatus(RacketStatus& _request);
+    RacketStatus getRacketStatus();
+    GeneralResponse sendScoreBoard(ScoreBoard& _request);
+    ScoreBoard getScoreBoard();
+    GeneralResponse changeTurn(ChangeTurnRequest& _request);
+    unsigned getCurrentTurn();
+    StartNewRoundResponse startNewRound(StartNewRoundRequest& _request);
+    RoundEndingResponse endRound(RoundEndingRequest& _request);
 
 private:
     std::unique_ptr<libnetwork::VirtualTennis::Stub> stub_;
