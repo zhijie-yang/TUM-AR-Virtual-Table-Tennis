@@ -45,6 +45,8 @@ namespace librendering {
 		std::function<int(const int&)> score2_deserialize();
 		std::function<int(const int&)> match1_deserialize();
 		std::function<int(const int&)> match2_deserialize();
+		std::function<int(const char*)> player1_deserialize();
+		std::function<int(const char*)> player2_deserialize();
 
 
 		int frametime_serialize(const std::function<int(float)>& processor);

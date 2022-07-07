@@ -31,6 +31,11 @@ int main(int, char **) {
 		return 1;
 	}
 
+	// TODO: For debugging, remove later
+	rendering.scene_set(rendering_manager::scene::ending);
+	rendering.player1_deserialize()("John");
+	rendering.player2_deserialize()("Sam");
+
 	while (!rendering.quit_get()) {
 		if (!rendering.paused_get()) {
 			if (vision.run_tick()) {

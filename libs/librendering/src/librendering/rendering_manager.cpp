@@ -81,6 +81,7 @@ private:
 
     char _ipAddress[256] = "127.0.0.1";
     int _port = 5599;
+    std::string _player1Name, _player2Name;
     
     rendering_manager::scene _scene;
 public:
@@ -208,7 +209,7 @@ public:
         {
             if (value != _match1) {
                 std::stringstream ss;
-                ss << "The match has ended. Current score is " << value << " to " << _match2;
+                ss << "The gamr has ended. Current score is " << value << " to " << _match2;
                 _popupData = ss.str();
                 _popupDuration = _settings.popup_timeout;
             }
@@ -223,11 +224,29 @@ public:
         {
             if (value != _match2) {
                 std::stringstream ss;
-                ss << "The match has ended. Current score is " << _match1 << " to " << value;
+                ss << "The game has ended. Current score is " << _match1 << " to " << value;
                 _popupData = ss.str();
                 _popupDuration = _settings.popup_timeout;
             }
             _match2 = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const char*)> player1_deserialize()
+    {
+        return [&](const char* value) -> int
+        {
+            _player1Name = value;
+            return 0;
+        };
+    }
+
+    std::function<int(const char*)> player2_deserialize()
+    {
+        return [&](const char* value) -> int
+        {
+            _player2Name = value;
             return 0;
         };
     }
@@ -508,7 +527,9 @@ public:
                     ImGui::End();
                 }
 
-                ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                auto* viewport = ImGui::GetMainViewport();
+                ImVec2 center = viewport->GetCenter();
+                ImVec2 brCorner = viewport->WorkSize;
                 switch (_scene) {
                     case rendering_manager::scene::main_menu:
                     {
@@ -549,12 +570,12 @@ public:
                         if (ImGui::InputInt("Port", &_port)) {}
 
                         if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            // Call networking
+                            // TODO: Call networking
                             scene_set(rendering_manager::scene::level);
                         }
                         ImGui::SameLine();
                         if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            // Call some more networking
+                            // TODO: Call some more networking
                             scene_set(rendering_manager::scene::level);
                         }
                         if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
@@ -565,8 +586,65 @@ public:
                     }
                     break;
                     case rendering_manager::scene::level:
+                    {
+                        ImGui::SetNextWindowPos(ImVec2(brCorner.x, 0.f), ImGuiCond_Always, ImVec2(1.f, 0.f));
+                        std::stringstream title;
+                        title << "Playing match " << _match1 + _match2 + 1;
+
+                        ImGui::Begin(title.str().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+                        ImGui::SetWindowFontScale(2.f);
+
+                        ImGui::Text("Current score is:");
+
+                        std::stringstream ss;
+                        ss << _player1Name << ": " << _score1;
+                        ImGui::Text(ss.str().c_str());
+                        ImGui::SameLine();
+
+                        ImGui::Text(" vs ");
+                        ImGui::SameLine();
+
+                        ss.str("");
+                        ss.clear();
+                        ss << _player2Name << ": " << _score2;
+                        ImGui::Text(ss.str().c_str());
+
+                        ImGui::End();
+                    }
                     break;
                     case rendering_manager::scene::ending:
+                    {
+                        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                        ImGui::Begin("Game Over", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+                        ImGui::Text("The match has ended!");
+                        ImGui::Text("Total game score is:");
+
+                        std::stringstream ss;
+                        ss << _player1Name << ": " << _match1;
+                        ImGui::Text(ss.str().c_str());
+                        ImGui::SameLine();
+
+                        ImGui::Text(" vs ");
+                        ImGui::SameLine();
+
+                        ss.str("");
+                        ss.clear();
+                        ss << _player2Name << ": " << _match2;
+                        ImGui::Text(ss.str().c_str());
+
+                        auto& style = ImGui::GetStyle();
+                        auto buttonWidth = ImGui::GetWindowWidth() - style.WindowPadding.x * 2.f;
+                        auto buttonHeight = 0.0f;
+
+                        if (ImGui::Button("Back to menu", ImVec2(buttonWidth, buttonHeight))) {
+                            // TODO: network disconnect
+                            scene_set(rendering_manager::scene::main_menu);
+                        }
+
+                        ImGui::End();
+                    }
                     break;
                 }
 
@@ -713,6 +791,16 @@ void rendering_manager::paused_set(bool value)
     _impl->paused_set(value);
 }
 
+rendering_manager::scene rendering_manager::scene_get() const
+{
+    return _impl->scene_get();
+}
+
+void rendering_manager::scene_set(rendering_manager::scene value)
+{
+    _impl->scene_set(value);
+}
+
 std::function<int(void*, int, int, int)> rendering_manager::capture_deserialize()
 {
     return _impl->capture_deserialize();
@@ -781,6 +869,16 @@ std::function<int(const int&)> rendering_manager::match1_deserialize()
 std::function<int(const int&)> rendering_manager::match2_deserialize()
 {
     return _impl->match2_deserialize();
+}
+
+std::function<int(const char*)> rendering_manager::player1_deserialize()
+{
+    return _impl->player1_deserialize();
+}
+
+std::function<int(const char*)> rendering_manager::player2_deserialize()
+{
+    return _impl->player2_deserialize();
 }
 
 int rendering_manager::frametime_serialize(const std::function<int(float)>& processor)
