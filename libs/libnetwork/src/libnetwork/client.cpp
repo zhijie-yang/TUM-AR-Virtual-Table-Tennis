@@ -222,8 +222,23 @@ int main(int argc, char** argv) {
     }
     VirtualTennisNetworkClient tennis_client(
     grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-    auto player_info = PlayerInfo(1, "Zhijie Yang");
-    auto connection_req = ClientConnectionRequest(target_str, player_info, 50051);
-    GeneralResponse connection_res = tennis_client.connectServer(connection_req);
+    auto player_info1 = PlayerInfo(1, "Zhijie Yang");
+    auto player_info2 = PlayerInfo(2, "Yifeng Li");
+    auto player_info3 = PlayerInfo(3, "Siyun Liang");
+    auto connection_req1 = ClientConnectionRequest(target_str, player_info1, 50051);
+    auto connection_req2 = ClientConnectionRequest(target_str, player_info2, 50051);
+    auto connection_req3 = ClientConnectionRequest(target_str, player_info2, 50051);
+    GeneralResponse connection_res = tennis_client.connectServer(connection_req1);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.connectServer(connection_req2);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.connectServer(connection_req3);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
     return 0;
 }
