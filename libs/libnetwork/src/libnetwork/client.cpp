@@ -1,5 +1,6 @@
 #include <grpc++/grpc++.h>
 
+#include "libnetwork/include/client.h"
 #include "libframework/include/infos.h"
 #include "libframework/include/responses.h"
 #include "libframework/include/requests.h"
@@ -9,29 +10,26 @@
 #include "libnetwork/proto_src/network.pb.h"
 #include "libnetwork/proto_src/network.grpc.pb.h"
 
-class VirtualTennisNetworkClient {
-public:
-    VirtualTennisNetworkClient(std::shared_ptr<grpc::Channel> channel)
-        : stub_(libnetwork::VirtualTennis::NewStub(channel)) {}
 
-
-    ClientConnectionResponse* connectServer(ClientConnectionRequest& _request) {
-        grpc::ClientContext context;
-        // serialize
-        libnetwork::ClientConnectionRequest request;
-        _request.toProto(request);
-        // handling the request and reponse
-        libnetwork::ClientConnectionResponse response;
-        grpc::Status status = stub_->ConnectServer(&context, request, &response);
-        // deserialize
-        auto _response = new ClientConnectionResponse();
-        ClientConnectionResponse::fromProto(response, *_response);
-        return _response;
+GeneralResponse* VirtualTennisNetworkClient::connectServer(ClientConnectionRequest& _request) {
+    grpc::ClientContext context;
+    // serialize
+    libnetwork::ClientConnectionRequest request;
+    _request.toProto(request);
+    // handling the request and reponse
+    libnetwork::GeneralResponse response;
+    grpc::Status status = stub_->ConnectServer(&context, request, &response);
+    // deserialize
+    auto _response = new GeneralResponse();
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, *_response);
+        std::cout << response.detail() << std::endl;
+    } else {
+        std::cout << status.error_message() << std::endl;
     }
-
-private:
-    std::unique_ptr<libnetwork::VirtualTennis::Stub> stub_;
-};
+    GeneralResponse::fromProto(response, *_response);
+    return _response;
+}
 
 int main(int argc, char** argv) {
     // Instantiate the client. It requires a channel, out of which the actual RPCs
@@ -65,8 +63,7 @@ int main(int argc, char** argv) {
     grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
     auto player_info = PlayerInfo(1, "Zhijie Yang");
     auto connection_req = ClientConnectionRequest(target_str, player_info, 50051);
-    ClientConnectionResponse* connection_res = tennis_client.connectServer(connection_req);
-    std::cout << connection_res->get_result() << std::endl;
+    GeneralResponse* connection_res = tennis_client.connectServer(connection_req);
     delete connection_res;
     return 0;
 }
