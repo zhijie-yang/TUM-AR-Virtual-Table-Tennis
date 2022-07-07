@@ -32,7 +32,7 @@ int main(int, char **) {
 	}
 
 	// TODO: For debugging, remove later
-	rendering.scene_set(rendering_manager::scene::ending);
+	rendering.scene_set(rendering_manager::scene::main_menu);
 	rendering.player1_deserialize()("John");
 	rendering.player2_deserialize()("Sam");
 
