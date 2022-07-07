@@ -1,6 +1,7 @@
 project(network)
 
 cmake_minimum_required(VERSION 3.13)
+set(CMAKE_CXX_STANDARD 14)
 
 find_package(Protobuf REQUIRED)
 # find_package(gRPC_GRPC++ REQUIRED)
@@ -60,6 +61,7 @@ target_include_directories(
 
 
 include_directories(${PROTO_SRC_DIR})
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}_grpc_handler
     ${PROTO_SRC_DIR}/network.grpc.pb.h

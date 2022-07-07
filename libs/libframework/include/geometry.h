@@ -130,8 +130,8 @@ public:
     }
 
     inline static void fromProto(const libnetwork::Velocity &v, Velocity &out) {
-        float v_arr[3] = {v.v_x(), v.v_y(), v.v_z()};
-        float w_arr[3] = {v.w_x(), v.w_y(), v.w_z()};
+        double v_arr[3] = {v.v_x(), v.v_y(), v.v_z()};
+        double w_arr[3] = {v.w_x(), v.w_y(), v.w_z()};
         out.linear = glm::make_vec3(v_arr);
         out.angular = glm::make_vec3(w_arr);
     }
