@@ -1,8 +1,6 @@
 project(vision)
 set(CMAKE_CXX_STANDARD 14)
 
-set(OPENCV_EXTRA_MODULES_PATH "../../vendor/opencv_contrib/modules" )
-
 find_package( OpenCV REQUIRED )
 
 add_library(${PROJECT_NAME}
