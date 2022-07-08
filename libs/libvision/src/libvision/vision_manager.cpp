@@ -38,7 +38,7 @@ private:
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 		std::vector<std::vector<cv::Point3f>> objectPoints(3);
-		markerImage = cv::imread("data/marker.png");
+		markerImage = cv::imread("marker.png");
 		cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
 		float middle_x;
 		float middle_y;
@@ -162,9 +162,9 @@ private:
 			std::cerr << "Estimation failed"<< std::endl;
 			return -1;
 		}
-		_board_tvec.val[0] = board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
-		_board_tvec.val[1] = board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
-		_board_tvec.val[2] = board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
+		_board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
+		_board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
+		_board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
 
 		std::vector<cv::Matx31d> rvecs, tvecs;
 
@@ -175,7 +175,7 @@ private:
 
 		for (size_t i = 0; i < _markerIds.size(); i++)
 		{
-			if (_markerIds[i] == RACKET_MAREKER_ID)
+			if (_markerIds[i] == RACKET_MARKER_ID)
 			{
 				rvecs[i] = _transPerspective(rvecs[i]);
 				srvec = rvecs[i];
@@ -217,7 +217,7 @@ private:
             //                    glm::vec3(_result[1]),
             //                    glm::vec3(_result[2]));
             //glm::vec3 translation = glm::vec3(_result[3]);
-
+			//glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
             //glm::vec3 transformedPos = rotM * marker_pos + translation;
             //std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
 		}
