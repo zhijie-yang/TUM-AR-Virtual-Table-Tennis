@@ -1,5 +1,6 @@
 #include <grpc++/grpc++.h>
 
+#include "libnetwork/include/client.h"
 #include "libframework/include/infos.h"
 #include "libframework/include/responses.h"
 #include "libframework/include/requests.h"
@@ -9,29 +10,187 @@
 #include "libnetwork/proto_src/network.pb.h"
 #include "libnetwork/proto_src/network.grpc.pb.h"
 
-class VirtualTennisNetworkClient {
-public:
-    VirtualTennisNetworkClient(std::shared_ptr<grpc::Channel> channel)
-        : stub_(libnetwork::VirtualTennis::NewStub(channel)) {}
 
-
-    ClientConnectionResponse* connectServer(ClientConnectionRequest& _request) {
-        grpc::ClientContext context;
-        // serialize
-        libnetwork::ClientConnectionRequest request;
-        _request.toProto(request);
-        // handling the request and reponse
-        libnetwork::ClientConnectionResponse response;
-        grpc::Status status = stub_->ConnectServer(&context, request, &response);
-        // deserialize
-        auto _response = new ClientConnectionResponse();
-        ClientConnectionResponse::fromProto(response, *_response);
-        return _response;
+GeneralResponse VirtualTennisNetworkClient::connectServer(ClientConnectionRequest& _request) {
+    grpc::ClientContext context;
+    // serialize
+    libnetwork::ClientConnectionRequest request;
+    _request.toProto(request);
+    // handling the request and reponse
+    libnetwork::GeneralResponse response;
+    grpc::Status status = stub_->ConnectServer(&context, request, &response);
+    // deserialize
+    // auto _response = new GeneralResponse();
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
     }
+    return _response;
+}
 
-private:
-    std::unique_ptr<libnetwork::VirtualTennis::Stub> stub_;
-};
+GeneralResponse VirtualTennisNetworkClient::disconnectServer() {
+    grpc::ClientContext context;
+    libnetwork::ClientDisconnectRequest request;
+    libnetwork::GeneralResponse response;
+    grpc::Status status = stub_->DisconnectServer(&context, request, &response);
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+        std::cout << response.detail() << std::endl;
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+GeneralResponse VirtualTennisNetworkClient::sendBallStatus(BallStatus& _request) {
+    grpc::ClientContext context;
+    libnetwork::BallStatus request;
+    libnetwork::GeneralResponse response;
+    _request.toProto(request);
+    grpc::Status status = stub_->SendBallStatus(&context, request, &response);
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+BallStatus VirtualTennisNetworkClient::getBallStatus() {
+    grpc::ClientContext context;
+    libnetwork::BallStatusRequest request;
+    libnetwork::BallStatus response;
+    grpc::Status status = stub_->GetBallStatus(&context, request, &response);
+    BallStatus _response;
+    if (status.ok()) {
+        BallStatus::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+GeneralResponse VirtualTennisNetworkClient::sendRacketStatus(RacketStatus& _request) {
+    grpc::ClientContext context;
+    libnetwork::RacketStatus request;
+    libnetwork::GeneralResponse response;
+    _request.toProto(request);
+    grpc::Status status = stub_->SendRacketStatus(&context, request, &response);
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+RacketStatus VirtualTennisNetworkClient::getRacketStatus() {
+    grpc::ClientContext context;
+    libnetwork::RacketStatusRequest request;
+    libnetwork::RacketStatus response;
+    grpc::Status status = stub_->GetRacketStatus(&context, request, &response);
+    RacketStatus _response;
+    if (status.ok()) {
+        RacketStatus::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+GeneralResponse VirtualTennisNetworkClient::sendScoreBoard(ScoreBoard& _request) {
+    grpc::ClientContext context;
+    libnetwork::ScoreBoard request;
+    libnetwork::GeneralResponse response;
+    _request.toProto(request);
+    grpc::Status status = stub_->SendScoreBoard(&context, request, &response);
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+ScoreBoard VirtualTennisNetworkClient::getScoreBoard() {
+    grpc::ClientContext context;
+    libnetwork::ScoreBoardRequest request;
+    libnetwork::ScoreBoard response;
+    grpc::Status status = stub_->GetScoreBoard(&context, request, &response);
+    ScoreBoard _response;
+    if (status.ok()) {
+        ScoreBoard::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+GeneralResponse VirtualTennisNetworkClient::changeTurn(ChangeTurnRequest& _request) {
+    grpc::ClientContext context;
+    libnetwork::ChangeTurnRequest request;
+    libnetwork::GeneralResponse response;
+    _request.toProto(request);
+    grpc::Status status = stub_->ChangeTurn(&context, request, &response);
+    GeneralResponse _response;
+    if (status.ok()) {
+        GeneralResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+unsigned VirtualTennisNetworkClient::getCurrentTurn() {
+    grpc::ClientContext context;
+    libnetwork::CurrentTurnRequest request;
+    libnetwork::CurrentTurnResponse response;
+    grpc::Status status = stub_->GetCurrentTurn(&context, request, &response);
+    unsigned _response;
+    if (status.ok()) {
+        _response = response.turn_owner();
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+StartNewRoundResponse VirtualTennisNetworkClient::startNewRound(StartNewRoundRequest& _request) {
+    grpc::ClientContext context;
+    libnetwork::StartNewRoundRequest request;
+    _request.toProto(request);
+    libnetwork::StartNewRoundResponse response;
+    grpc::Status status = stub_->StartNewRound(&context, request, &response);
+    StartNewRoundResponse _response;
+    if (status.ok()) {
+        StartNewRoundResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
+RoundEndingResponse VirtualTennisNetworkClient::endRound(RoundEndingRequest& _request) {
+    grpc::ClientContext context;
+    libnetwork::RoundEndingRequest request;
+    _request.toProto(request);
+    libnetwork::RoundEndingResponse response;
+    grpc::Status status = stub_->EndRound(&context, request, &response);
+    RoundEndingResponse _response;
+    if (status.ok()) {
+        RoundEndingResponse::fromProto(response, _response);
+    } else {
+        std::cout << status.error_message() << std::endl;
+    }
+    return _response;
+}
+
 
 int main(int argc, char** argv) {
     // Instantiate the client. It requires a channel, out of which the actual RPCs
@@ -63,10 +222,23 @@ int main(int argc, char** argv) {
     }
     VirtualTennisNetworkClient tennis_client(
     grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-    auto player_info = PlayerInfo(1, "Zhijie Yang");
-    auto connection_req = ClientConnectionRequest(target_str, player_info, 50051);
-    ClientConnectionResponse* connection_res = tennis_client.connectServer(connection_req);
-    std::cout << connection_res->get_result() << std::endl;
-    delete connection_res;
+    auto player_info1 = PlayerInfo(1, "Zhijie Yang");
+    auto player_info2 = PlayerInfo(2, "Yifeng Li");
+    auto player_info3 = PlayerInfo(3, "Siyun Liang");
+    auto connection_req1 = ClientConnectionRequest(target_str, player_info1, 50051);
+    auto connection_req2 = ClientConnectionRequest(target_str, player_info2, 50051);
+    auto connection_req3 = ClientConnectionRequest(target_str, player_info2, 50051);
+    GeneralResponse connection_res = tennis_client.connectServer(connection_req1);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.connectServer(connection_req2);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.connectServer(connection_req3);
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
+    connection_res = tennis_client.disconnectServer();
+    std::cout << connection_res.get_detail() << std::endl;
     return 0;
 }
