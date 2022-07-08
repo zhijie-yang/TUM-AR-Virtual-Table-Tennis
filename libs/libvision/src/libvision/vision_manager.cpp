@@ -38,7 +38,7 @@ private:
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 		std::vector<std::vector<cv::Point3f>> objectPoints(3);
-		markerImage = cv::imread("marker.png");
+		markerImage = cv::imread("../data/marker.png");
 		cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
 		float middle_x;
 		float middle_y;
@@ -104,15 +104,16 @@ private:
 		// After capturing in several viewpoints, start calibration
 		std::vector<cv::Mat> rvecs, tvecs;
 		double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, _board, imgSize, _cameraMatrix, _distCoeffs, rvecs, tvecs);
-		FileStorage fs("camera_paras.yml", FileStorage::WRITE);
+		FileStorage fs("../data/camera_paras.yml", FileStorage::WRITE);
 		fs << "cameraMatrix" << _cameraMatrix << "distCoeffs" << _distCoeffs;
 		fs.release();
+		cv::destroyAllWindows();
 		return 0;
 	}
 
 	int _read_calibrate_paras()
 	{
-		FileStorage fs("camera_paras.yml", FileStorage::READ);
+		FileStorage fs("../data/camera_paras.yml", FileStorage::READ);
 		fs["cameraMatrix"] >> _cameraMatrix;
 		fs["distCoeffs"] >> _distCoeffs;
 		fs.release();
@@ -255,7 +256,7 @@ public:
 			return -1;
 		}
 		_create_board();
-		//_save_calibrate_paras();
+		_save_calibrate_paras();
 		_read_calibrate_paras();
 		return 0;
 	}
