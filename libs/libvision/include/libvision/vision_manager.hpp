@@ -17,19 +17,14 @@ namespace libvision {
 
 		int capture_width_get() const;
 		int capture_height_get() const;
-		int create_board();
 		int capture_serialize(const std::function<int(void*, int)>& processor);
 
 		int init(const vision_settings& settings);
 		int run_tick();
-		int save_calibrate_paras();
 		int term();
-		int read_calibrate_paras();
-		int detect_markers();
-		int estimate_position();
 	};
 }
 
-#endif // !LIBRENDERING_MANAGER
+#endif // !LIBVISION_MANAGER
 
 #pragma once

@@ -31,7 +31,7 @@ private:
 	std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
 	std::vector<int> _markerIds;
 	cv::Ptr<cv::aruco::Board> _board;
-    cv::Matx31d _board_rvec, _board_tvec;
+	cv::Matx31d _board_rvec, _board_tvec;
 	int _create_board()
 	{
 		cv::Mat markerImage;
@@ -72,8 +72,9 @@ private:
 		std::vector<int> markerCounterPerFrame;
 		// Detect aruco board from several viewpoints and fill allCornersConcatenated, allIdsConcatenated and markerCounterPerFrame
 		int count = 0;
-		while (true) {
-            _cap >> _frame;
+		while (true) 
+		{
+			_cap >> _frame;
 			cv::imshow("Webcam", _frame);
 			int key = waitKey(1500);
 			if (key == 13)
@@ -120,7 +121,8 @@ private:
 		return 0;
 	}
 
-	tuple<cv::Matx31d, cv::Matx31d> _inversePerspective(cv::Matx31d rvec, cv::Matx31d tvec) {
+	tuple<cv::Matx31d, cv::Matx31d> _inversePerspective(cv::Matx31d rvec, cv::Matx31d tvec)
+	{
 		cv::Matx33d rmat;
 		cv::Rodrigues(rvec, rmat);
 		rmat = rmat.t();
@@ -183,20 +185,13 @@ private:
 				stvec = tvecs[i];
 				f_racket = true;
 			}
-        }
-/*
-            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(rvec, tvec);
-            inv_rvec = std::get<0>(t);
-            inv_tvec = std::get<1>(t);
-            marker_pos = glm::vec3(object[i].x, object[i].y, object[i].z);
-*/
-
+		}
 
 		if (f_racket) 
 		{
-            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_board_rvec,_board_tvec);
-            inv_rvec = std::get<0>(t);
-            inv_tvec = std::get<1>(t);
+			tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_board_rvec,_board_tvec);
+			inv_rvec = std::get<0>(t);
+			inv_tvec = std::get<1>(t);
 			cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
 			cv::Matx33d rmat;
 			cv::Rodrigues(t_rvec, rmat);
@@ -214,13 +209,13 @@ private:
 			}
 			_result[3][3] = 1.0f;
 
-            //glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
-            //                    glm::vec3(_result[1]),
-            //                    glm::vec3(_result[2]));
-            //glm::vec3 translation = glm::vec3(_result[3]);
+			//glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
+			//glm::vec3(_result[1]);
+			//glm::vec3(_result[2]));
+			//glm::vec3 translation = glm::vec3(_result[3]);
 			//glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
-            //glm::vec3 transformedPos = rotM * marker_pos + translation;
-            //std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
+			//glm::vec3 transformedPos = rotM * marker_pos + translation;
+			//std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
 		}
 
 		return 0;
@@ -326,4 +321,3 @@ int vision_manager::capture_serialize(const std::function<int(void*, int)>& proc
 {
 	return _impl->capture_serialize(processor);
 }
-
