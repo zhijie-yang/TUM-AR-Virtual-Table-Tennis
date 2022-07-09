@@ -18,7 +18,7 @@ namespace libvision {
 		int capture_width_get() const;
 		int capture_height_get() const;
 
-		int capture_serialize(const std::function<int(void*, int)>& processor);
+		int capture_serialize(const std::function<int(void*, int, int, int)>& processor);
 
 		int init(const vision_settings& settings);
 		int run_tick();

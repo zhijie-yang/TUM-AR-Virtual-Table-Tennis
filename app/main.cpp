@@ -21,14 +21,20 @@ int main(int, char **) {
 	rendering_manager rendering;
 	rendering_settings rsettings;
 	rsettings.window_width = 800;
-	rsettings.window_height = 480;
+	rsettings.window_height = 600;
 	rsettings.frame_width = vision.capture_width_get();
 	rsettings.frame_height = vision.capture_height_get();
+	rsettings.free_cam_enabled = true;
 
 	if (rendering.init(rsettings)) {
 		cerr << "Failed to init rendering.\n";
 		return 1;
 	}
+
+	// TODO: For debugging, remove later
+	rendering.scene_set(rendering_manager::scene::main_menu);
+	rendering.player1_deserialize()("John");
+	rendering.player2_deserialize()("Sam");
 
 	while (!rendering.quit_get()) {
 		if (!rendering.paused_get()) {

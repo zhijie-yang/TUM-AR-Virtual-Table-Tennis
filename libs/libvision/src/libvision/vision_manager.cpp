@@ -1,5 +1,6 @@
 #include "libvision/vision_manager.hpp"
 
+#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
 #include <iostream>
@@ -25,9 +26,9 @@ public:
         return (int)_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
     }
 
-    int capture_serialize(const std::function<int(void*, int)>& processor)
+    int capture_serialize(const std::function<int(void*, int, int, int)>& processor)
     {
-        return processor((void*)_frame.ptr(), _frame.rows * _frame.cols * _frame.channels());
+        return processor((void*)_frame.ptr(), _frame.rows, _frame.cols, _frame.channels());
     }
 
     int init(const vision_settings& settings)
@@ -96,7 +97,7 @@ int vision_manager::term()
 	return _impl->term();
 }
 
-int vision_manager::capture_serialize(const std::function<int(void*, int)>& processor)
+int vision_manager::capture_serialize(const std::function<int(void*, int, int, int)>& processor)
 {
     return _impl->capture_serialize(processor);
 }

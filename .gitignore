@@ -37,3 +37,5 @@ out/
 .vs/
 .vscode/
 proto_src/
+
+CMakeSettings.json
