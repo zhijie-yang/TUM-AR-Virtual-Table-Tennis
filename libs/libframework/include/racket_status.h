@@ -6,13 +6,13 @@
 
 class RacketStatus {
 public:
-    RacketStatus();
+    RacketStatus(){}
     RacketStatus(unsigned const& player_id, Transform const& pose, Velocity const& velocity) {
         this->player_id = player_id;
         this->pose = pose;
         this->velocity = velocity;
     }
-    ~RacketStatus();
+    ~RacketStatus(){}
 
 private:
     unsigned player_id;

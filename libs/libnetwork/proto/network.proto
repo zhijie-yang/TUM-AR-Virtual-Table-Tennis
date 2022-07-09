@@ -6,13 +6,18 @@ package libnetwork;
 
 service VirtualTennis {
     rpc SendBallStatus (BallStatus) returns (GeneralResponse) {}
+    rpc GetBallStatus (BallStatusRequest) returns (BallStatus) {}
     rpc SendRacketStatus (RacketStatus) returns (GeneralResponse) {}
+    rpc GetRacketStatus (RacketStatusRequest) returns (RacketStatus) {}
     rpc SendScoreBoard (ScoreBoard) returns (GeneralResponse) {}
+    rpc GetScoreBoard (ScoreBoardRequest) returns (ScoreBoard) {}
     rpc ChangeTurn (ChangeTurnRequest) returns (GeneralResponse) {}
+    rpc GetCurrentTurn (CurrentTurnRequest) returns (CurrentTurnResponse) {}
     rpc StartNewRound (StartNewRoundRequest) returns (StartNewRoundResponse) {}
     rpc EndRound (RoundEndingRequest) returns (RoundEndingResponse) {}
     rpc Broadcast (ServerBroadcast) returns (google.protobuf.Empty) {}
-    rpc ConnectServer (ClientConnectionRequest) returns (ClientConnectionResponse) {}
+    rpc ConnectServer (ClientConnectionRequest) returns (GeneralResponse) {}
+    rpc DisconnectServer (ClientDisconnectRequest) returns (GeneralResponse) {}
 }
 
 message PlayerInfo {
@@ -111,4 +116,23 @@ message ClientConnectionResponse {
     bool result = 1;
     string detail = 2;
     PlayerInfo player_info = 3;
+}
+
+message BallStatusRequest {
+}
+
+message RacketStatusRequest {
+}
+
+message ScoreBoardRequest {
+}
+
+message CurrentTurnRequest {
+}
+
+message CurrentTurnResponse {
+    uint32 turn_owner = 1;
+}
+
+message ClientDisconnectRequest {
 }

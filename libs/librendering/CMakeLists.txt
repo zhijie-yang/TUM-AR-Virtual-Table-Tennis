@@ -1,4 +1,5 @@
 project(rendering)
+set(CMAKE_CXX_STANDARD 14)
 
 file(GLOB IMGUI_SRC ../../vendor/imgui/*.cpp)
 file(GLOB IMGUI_INC ../../vendor/imgui/*.h)

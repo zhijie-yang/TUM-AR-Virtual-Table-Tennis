@@ -6,12 +6,12 @@
 
 class PlayerInfo {
 public:
-    PlayerInfo();
+    PlayerInfo(){}
     PlayerInfo(unsigned const& player_id, std::string const& player_name) {
         this->player_id = player_id;
         this->player_name = player_name;
     }
-    ~PlayerInfo();
+    ~PlayerInfo(){}
 
 private:
     unsigned player_id;
@@ -47,12 +47,12 @@ public:
 
 class ScoreBoard {
 public:
-    ScoreBoard();
+    ScoreBoard(){}
     ScoreBoard(unsigned const& player_1_score, unsigned const& player_2_score) {
         this->player_1_score = player_1_score;
         this->player_2_score = player_2_score;
     }
-    ~ScoreBoard();
+    ~ScoreBoard(){}
 
 private:
     unsigned player_1_score;
@@ -88,12 +88,12 @@ public:
 
 class ServerBroadcast {
 public:
-    ServerBroadcast();
+    ServerBroadcast(){}
     ServerBroadcast(std::string ip_address, std::string host_name) {
         this->ip_address = ip_address;
         this->host_name = host_name;
     }
-    ~ServerBroadcast();
+    ~ServerBroadcast(){}
 
 private:
     std::string ip_address;
