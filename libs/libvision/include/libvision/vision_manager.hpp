@@ -1,7 +1,7 @@
 #ifndef LIBVISION_MANAGER
 #define LIBVISION_MANAGER
 
-#include "libvision/vision_settings.hpp"
+#include "vision_settings.hpp"
 
 #include <memory>
 #include <functional>
@@ -17,7 +17,6 @@ namespace libvision {
 
 		int capture_width_get() const;
 		int capture_height_get() const;
-
 		int capture_serialize(const std::function<int(void*, int)>& processor);
 
 		int init(const vision_settings& settings);
@@ -26,4 +25,6 @@ namespace libvision {
 	};
 }
 
-#endif // !LIBRENDERING_MANAGER
+#endif // !LIBVISION_MANAGER
+
+#pragma once
