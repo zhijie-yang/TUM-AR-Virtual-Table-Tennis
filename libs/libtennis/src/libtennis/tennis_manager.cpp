@@ -94,12 +94,12 @@ private:
                 model *= glm::scale(ball_scale);
                 break;
             case 2: // table
-                table_scale.y = 0.005f;
+                table_scale.y = 0.025f;
                 model *= glm::scale(table_scale);
                 break;
             case 3: // net
                 table_scale.y *= 2;
-                table_scale.z = 0.005f;
+                table_scale.z = 0.025f;
                 model = model * glm::scale(table_scale);
                 break;
             default:
@@ -131,6 +131,7 @@ public:
         if(GetKeyState('S') & 0x8000)
         {
             std::cout << "down and hit table" << std::endl;
+            _numHitTable = 0;
             _gravity = true;
             _isServed = true;
             _isServingTurn = true;
@@ -140,134 +141,143 @@ public:
         if(GetKeyState('D') & 0x8000)
         {
             std::cout << "down and not hit table" << std::endl;
+            _numHitTable = 0;
             _gravity = true;
             _isServed = true;
             _isServingTurn = true;
             _ball.set_position(glm::vec3(0, 0.175, 1.6));
-            _ball.set_velocity(glm::vec3(0, -1, 0));
+            _ball.set_velocity(glm::vec3(0, -0.5, 0));
         }
 
         if(GetKeyState('W') & 0x8000)
         {
             std::cout << "up and hit net" << std::endl;
+            _numHitTable = 0;
             _gravity = false;
             _isServed = true;
             _isServingTurn = true;
             _ball.set_position(glm::vec3(0, 0.175, 1.37));
-            _ball.set_velocity(glm::vec3(0, 0, -1));
+            _ball.set_velocity(glm::vec3(0, 0, -0.5));
         }
 
         if(GetKeyState('E') & 0x8000)
         {
             std::cout << "up and not hit net" << std::endl;
+            _numHitTable = 0;
             _gravity = false;
             _isServed = true;
             _isServingTurn = true;
-            _ball.set_velocity(glm::vec3(0, 0, -1));
+            _ball.set_velocity(glm::vec3(0, 0, -0.5));
         }
 
         if(GetKeyState('F') & 0x8000)
         {
             std::cout << "hit table test" << std::endl;
+            _numHitTable = 0;
             _gravity = true;
             _isServed = true;
             _isServingTurn = true;
-            _ball.set_velocity(glm::vec3(1, 0.5, -3));
+            _ball.set_position(glm::vec3(0, 0.4f, 1.37f));
+            _ball.set_velocity(glm::vec3(0.2, 0.5, -3));
         }
 
-        if (!_isServed) {
-        // To make it easy, before serving, let the ball fix at the position
-            // TODO: change init position by server
-            //_ball.set_position(_server? _player2_init_ball_pos: _player1_init_ball_pos);
-            _ball.set_position(_player1_init_ball_pos);
-            _ball.set_velocity(glm::vec3(0, 0, 0));
-        }
-
-        glm::mat4 racketA2World = _obj2World(_racket1Model, 0);
-        glm::mat4 racketB2World = _obj2World(_racket2Model, 0);
-        glm::mat4 table2World = _obj2World(_tableModel, 2);
-        glm::mat4 net2World = _obj2World(_netModel, 3);
-
-        // compute external forces and accelerations for ball
-        glm::vec3 force = _externalForcesCalculation();
-
-        // leap frog integration to update position and velocity of ball
-        glm::vec3 acc = force / _ball.get_mass();
-        _ball.set_velocity(_ball.get_velocity() + _timestep * acc);
-        _ball.set_position(_ball.get_position() + _timestep * _ball.get_velocity());
-
-        glm::mat4 ball2World = _obj2World(_ball.get_model(), 1);
-        CollisionInfo ball_coll_racketA = checkCollisionSAT(ball2World, racketA2World);
-        CollisionInfo ball_coll_racketB = checkCollisionSAT(ball2World, racketB2World);
-        CollisionInfo ball_coll_table = checkCollisionSAT(ball2World, table2World);
-        CollisionInfo ball_coll_net = checkCollisionSAT(ball2World, net2World);
-        if (ball_coll_racketA.isValid || ball_coll_racketB.isValid) {
-            int player = ball_coll_racketA.isValid? 0: 1;
-            _turnOwner = player; // change current turn owner
-            CollisionInfo validColl = ball_coll_racketA.isValid? ball_coll_racketA: ball_coll_racketB;
-
-            if (!_isServed && (player == _server)) {
-                // serving
-                _isServed = true;
-                _isServingTurn = true;
+        float timestep = _timestep / 4;
+        for (int i = 0; i < 4; i++) {
+            if (!_isServed) {
+                // To make it easy, before serving, let the ball fix at the position
+                // TODO: change init position by server
+                //_ball.set_position(_server? _player2_init_ball_pos: _player1_init_ball_pos);
+                _ball.set_position(_player1_init_ball_pos);
+                _ball.set_velocity(glm::vec3(0, 0, 0));
             }
-            // TODO: racket ball collision handling
-            //glm::vec3 direction = validColl.normalWorld;
-            //_ball.set_velocity(direction * 10.0f);
-        } else if (ball_coll_table.isValid) {
-            glm::vec3 collisionPoint = ball_coll_table.collisionPointWorld;
-            std::cout << "Hit table: " << _numHitTable + 1 << std::endl;
-            if (_numHitTable == 1) {
-                if (_isServingTurn) {
-                    // Case 1: is serving turn, the second hit should be on the enemy's side. Player 1's z > 0, and player2's z < 0
-                    if ((_turnOwner == 0 && collisionPoint.z < 0) || (_turnOwner == 1 && collisionPoint.z > 0)) {
+
+            glm::mat4 racketA2World = _obj2World(_racket1Model, 0);
+            glm::mat4 racketB2World = _obj2World(_racket2Model, 0);
+            glm::mat4 table2World = _obj2World(_tableModel, 2);
+            glm::mat4 net2World = _obj2World(_netModel, 3);
+
+            // compute external forces and accelerations for ball
+            glm::vec3 force = _externalForcesCalculation();
+
+            // leap frog integration to update position and velocity of ball
+            glm::vec3 acc = force / _ball.get_mass();
+            _ball.set_velocity(_ball.get_velocity() + timestep * acc);
+            _ball.set_position(_ball.get_position() + timestep * _ball.get_velocity());
+
+            glm::mat4 ball2World = _obj2World(_ball.get_model(), 1);
+            CollisionInfo ball_coll_racketA = checkCollisionSAT(ball2World, racketA2World);
+            CollisionInfo ball_coll_racketB = checkCollisionSAT(ball2World, racketB2World);
+            CollisionInfo ball_coll_table = checkCollisionSAT(ball2World, table2World);
+            CollisionInfo ball_coll_net = checkCollisionSAT(ball2World, net2World);
+            if (ball_coll_racketA.isValid || ball_coll_racketB.isValid) {
+                int player = ball_coll_racketA.isValid? 0: 1;
+                _turnOwner = player; // change current turn owner
+                CollisionInfo validColl = ball_coll_racketA.isValid? ball_coll_racketA: ball_coll_racketB;
+
+                if (!_isServed && (player == _server)) {
+                    // serving
+                    _isServed = true;
+                    _isServingTurn = true;
+                }
+                // TODO: racket ball collision handling
+                //glm::vec3 direction = validColl.normalWorld;
+                //_ball.set_velocity(direction * 10.0f);
+            } else if (ball_coll_table.isValid) {
+                glm::vec3 collisionPoint = ball_coll_table.collisionPointWorld;
+                std::cout << "Hit table: " << _numHitTable + 1 << std::endl;
+                if (_numHitTable == 1) {
+                    if (_isServingTurn) {
+                        // Case 1: is serving turn, the second hit should be on the enemy's side. Player 1's z > 0, and player2's z < 0
+                        if ((_turnOwner == 0 && collisionPoint.z < 0) || (_turnOwner == 1 && collisionPoint.z > 0)) {
+                            glm::vec3 v = _ball.get_velocity();
+                            _ball.set_velocity(glm::vec3(v.x, -v.y, v.z));
+                        } else {
+                            // If not on the enemy's side, then lose
+                            _endCurrentTurn(false);
+                        }
+                    } else {
+                        // Case 2: is not serving turn, win
+                        _endCurrentTurn(true);
+                    }
+
+                } else if (_numHitTable == 0) {
+                    // Case 1: is serving turn, the first hit should be on the turn owner's side, or lose
+                    // Case 2: is not serving turn, the first hit should be on the enemy's side, or lose
+                    if ((_isServingTurn && ((_turnOwner == 0 && collisionPoint.z < 0) || (_turnOwner == 1 && collisionPoint.z > 0)))
+                        || (!_isServingTurn && ((_turnOwner == 0 && collisionPoint.z > 0) || (_turnOwner == 1 && collisionPoint.z < 0)))) {
+                        _endCurrentTurn(false);
+                    } else {
                         glm::vec3 v = _ball.get_velocity();
                         _ball.set_velocity(glm::vec3(v.x, -v.y, v.z));
-                    } else {
-                        // If not on the enemy's side, then lose
-                        _endCurrentTurn(false);
                     }
                 } else {
-                    // Case 2: is not serving turn, win
                     _endCurrentTurn(true);
                 }
-
-            } else if (_numHitTable == 0) {
-                // Case 1: is serving turn, the first hit should be on the turn owner's side, or lose
-                // Case 2: is not serving turn, the first hit should be on the enemy's side, or lose
-                if ((_isServingTurn && ((_turnOwner == 0 && collisionPoint.z < 0) || (_turnOwner == 1 && collisionPoint.z > 0)))
-                || (!_isServingTurn && ((_turnOwner == 0 && collisionPoint.z > 0) || (_turnOwner == 1 && collisionPoint.z < 0)))) {
-                    _endCurrentTurn(false);
-                } else {
-                    glm::vec3 v = _ball.get_velocity();
-                    _ball.set_velocity(glm::vec3(v.x, -v.y, v.z));
-                }
+                _numHitTable++;
+            } else if (ball_coll_net.isValid) {
+                // to make it easy, if ball collide with net, fail
+                std::cout << "Hit net" << std::endl;
+                _endCurrentTurn(false);
             } else {
-                _endCurrentTurn(true);
-            }
-            _numHitTable++;
-        } else if (ball_coll_net.isValid) {
-            // to make it easy, if ball collide with net, fail
-            std::cout << "Hit net" << std::endl;
-            _endCurrentTurn(false);
-        } else {
-            // is ball flying out of boundary?
-            glm::vec3 table_scale = Constant::table_scale;
-            float offset = 0.5;
-            glm::vec3 pos = _ball.get_position();
-            if ( (pos.x > table_scale.x / 2 + offset || pos.x < - (table_scale.x / 2 + offset)) ||
-                 (pos.z > table_scale.z / 2 + offset || pos.z < - (table_scale.z / 2 + offset)) ||
-                 pos.y < -offset) {
-                // fly out of the boundary
-                // case
-                std::cout << "Out of boundary" << std::endl;
-                if (_numHitTable == 0 || (_numHitTable == 1 && _isServingTurn)) {
-                    _endCurrentTurn(false);
-                } else {
-                    _endCurrentTurn(true);
+                // is ball flying out of boundary?
+                glm::vec3 table_scale = Constant::table_scale;
+                float offset = 0.5;
+                glm::vec3 pos = _ball.get_position();
+                if ( (pos.x > table_scale.x / 2 + offset || pos.x < - (table_scale.x / 2 + offset)) ||
+                     (pos.z > table_scale.z / 2 + offset || pos.z < - (table_scale.z / 2 + offset)) ||
+                     pos.y < -offset) {
+                    // fly out of the boundary
+                    // case
+                    std::cout << "Out of boundary" << std::endl;
+                    if (_numHitTable == 0 || (_numHitTable == 1 && _isServingTurn)) {
+                        _endCurrentTurn(false);
+                    } else {
+                        _endCurrentTurn(true);
+                    }
                 }
             }
         }
+
         return 0;
     }
 
