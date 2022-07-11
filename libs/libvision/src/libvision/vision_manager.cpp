@@ -25,13 +25,35 @@ private:
 	cv::VideoCapture _cap;
 	cv::Mat _frame;
 	cv::Mat _cameraMatrix, _distCoeffs;
-	glm::mat4 _result;
+	glm::mat4 _racket2table,_table2cam,_racket2cam;
 	cv::Ptr<cv::aruco::Dictionary> _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 	cv::Ptr<cv::aruco::DetectorParameters> _parameters = cv::aruco::DetectorParameters::create();
 	std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
 	std::vector<int> _markerIds;
 	cv::Ptr<cv::aruco::Board> _board;
 	cv::Matx31d _board_rvec, _board_tvec;
+
+	glm::mat4 _fill_mat4(cv::Matx31d rvec,cv::Matx31d tvec)
+	{
+		glm::mat4 _result;
+		cv::Matx33d rmat;
+		cv::Rodrigues(rvec, rmat);
+		for (size_t i = 0; i < 3; i++)
+		{
+			for (size_t j = 0; j < 3; j++)
+			{
+				_result[i][j] = rmat.val[i + j * 3];
+			}
+			_result[i][3] = 0.0f;
+		}
+		for (size_t j = 0; j < 3; j++)
+		{
+			_result[3][j] = tvec.val[j];
+		}
+		_result[3][3] = 1.0f;	
+		return _result;	
+	}
+	
 	int _create_board()
 	{
 		cv::Mat markerImage;
@@ -193,21 +215,9 @@ private:
 			inv_rvec = std::get<0>(t);
 			inv_tvec = std::get<1>(t);
 			cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
-			cv::Matx33d rmat;
-			cv::Rodrigues(t_rvec, rmat);
-			for (size_t i = 0; i < 3; i++)
-			{
-				for (size_t j = 0; j < 3; j++)
-				{
-					_result[i][j] = rmat.val[i + j * 3];
-				}
-				_result[i][3] = 0.0f;
-			}
-			for (size_t j = 0; j < 3; j++)
-			{
-				_result[3][j] = t_tvec.val[j];
-			}
-			_result[3][3] = 1.0f;
+			_racket2table = _fill_mat4(t_rvec,t_tvec);
+			_racket2cam = _fill_mat4(srvec, stvec);
+			_table2cam = _fill_mat4(_board_rvec,_board_tvec);
 
 			//glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
 			//glm::vec3(_result[1]);
@@ -276,12 +286,6 @@ public:
 
 		return 0;
 	}
-
-	glm::mat4 get_transformation_matrix()
-	{
-		return _result;
-	}
-
 
 };
 
