@@ -25,6 +25,8 @@
 #include <librendering/camera.h>
 #include <librendering/model.h>
 
+#include "libframework/include/constant.h"
+
 using namespace librendering;
 
 void glfw_error_callback(int error, const char* description)
@@ -131,38 +133,62 @@ public:
         _paused = value;
     }
 
-    std::function<int(const glm::mat4&)> racket2_deserialize()
+    std::function<int(float*)> racket2_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _racket2Model = value;
+            _racket2Model = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
             return 0;
         };
     }
 
-    std::function<int(const glm::mat4&)> racket1_deserialize()
+    std::function<int(float*)> racket1_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _racket1Model = value;
+            _racket1Model = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
             return 0;
         };
     }
 
-    std::function<int(const glm::mat4&)> ball_deserialize()
+    std::function<int(float*)> ball_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _ballModel = value;
+            _ballModel = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
+            //_ballModel = _ballModel * glm::scale(glm::vec3(0.045, 0.045, 0.045));
+            //_ballModel = glm::scale(glm::vec3(0.045, 0.045, 0.045)) * _ballModel;
             return 0;
         };
     }
 
-    std::function<int(const glm::mat4&)> table_deserialize()
+    std::function<int(float*)> table_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _tableModel = value;
+            glm::vec3 table_scale = Constant::table_scale;
+            float net_height = table_scale.y;
+            table_scale.y = table_scale.z;
+            table_scale.z = net_height;
+            _tableModel = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
+            _tableModel = _tableModel * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
+            _tableModel = _tableModel * glm::scale(table_scale) * glm::mat4(1.0f);
             return 0;
         };
     }
@@ -274,7 +300,8 @@ public:
     {
         _settings = settings;
 
-        camera = Camera{ glm::vec3(0.0f, 0.0f, 3.0f) };
+        //camera = Camera{ glm::vec3(0.0f, 0.0f, 3.0f) };
+        camera = Camera{ glm::vec3(0.0f, 0.8f, 3.5f) };
         lastX = settings.window_width / 2.f;
         lastY = settings.window_height / 2.f;
         firstMouse = true;
@@ -287,10 +314,12 @@ public:
         _proj = glm::perspective(glm::radians(camera.Zoom), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
         _ballModel = glm::mat4(1.0f);
         _ballModel = glm::translate(_ballModel, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        _ballModel = glm::translate(_ballModel, glm::vec3(-0.25f, 0.1f, 0.6f)); // translate it down so it's at the center of the scene
         _ballModel = glm::scale(_ballModel, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        _racket1Model = _racket2Model = _ballModel;
-
-        _tableModel = glm::scale(glm::vec3(0.7625f, 1.37f, 0.07625f));
+        
+        _tableModel = glm::mat4(1.f);
+        _tableModel = glm::rotate(_tableModel, glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
+        _tableModel *= glm::scale(glm::vec3(0.7625f, 1.37f, 0.07625f));
 
         // ---------------------------------------
         // GLFW Initialization
@@ -305,7 +334,7 @@ public:
         }
         glfwMakeContextCurrent(_window);
         glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
-        glfwSetCursorPosCallback(_window, mouse_callback);
+        //glfwSetCursorPosCallback(_window, mouse_callback);
         glfwSetScrollCallback(_window, scroll_callback);
         //glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -393,10 +422,7 @@ public:
                 ourShader->setMat4("model", _racket2Model);
                 _racketObject->Draw(*ourShader);
 
-                auto tableModel = glm::mat4(1.f);
-                tableModel = glm::rotate(tableModel, glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
-                tableModel *= _tableModel;
-                ourShader->setMat4("model", tableModel);
+                ourShader->setMat4("model", _tableModel);
                 _tableObject->Draw(*ourShader);
             });
 
@@ -831,22 +857,22 @@ std::function<int(const glm::mat4&)> rendering_manager::view_deserialize()
     return _impl->view_deserialize();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::ball_deserialize()
+std::function<int(float*)> rendering_manager::ball_deserialize()
 {
     return _impl->ball_deserialize();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::racket1_deserialize()
+std::function<int(float*)> rendering_manager::racket1_deserialize()
 {
     return _impl->racket1_deserialize();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::racket2_deserialize()
+std::function<int(float*)> rendering_manager::racket2_deserialize()
 {
     return _impl->racket2_deserialize();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::table_deserialize()
+std::function<int(float*)> rendering_manager::table_deserialize()
 {
     return _impl->table_deserialize();
 }

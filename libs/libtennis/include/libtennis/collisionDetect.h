@@ -31,49 +31,49 @@ namespace libtennis{
     /*
      * Math impl
      */
-    inline glm::vec3 vector3TransformNormal(glm::vec3 vec, glm::mat4 mat) {
-        glm::vec3 z = glm::vec3(vec[2], vec[2], vec[2]);
-        glm::vec3 y = glm::vec3(vec[1], vec[1], vec[1]);
-        glm::vec3 x = glm::vec3(vec[0], vec[0], vec[0]);
+    inline glm::vec4 vector3TransformNormal(glm::vec4 vec, glm::mat4 mat) {
+        glm::vec4 z = glm::vec4(vec[2], vec[2], vec[2], vec[2]);
+        glm::vec4 y = glm::vec4(vec[1], vec[1], vec[1], vec[1]);
+        glm::vec4 x = glm::vec4(vec[0], vec[0], vec[0], vec[0]);
 
-        glm::vec3 result = z * glm::vec3(row(mat, 2));
-        result = y * glm::vec3(row(mat, 1)) + result;
-        result = y * glm::vec3(row(mat, 0)) + result;
-
-        return result;
-    }
-
-    inline glm::vec3 vector3Transform(glm::vec3 vec, glm::mat4 mat) {
-        glm::vec3 z = glm::vec3(vec[2], vec[2], vec[2]);
-        glm::vec3 y = glm::vec3(vec[1], vec[1], vec[1]);
-        glm::vec3 x = glm::vec3(vec[0], vec[0], vec[0]);
-
-        glm::vec3 result = z * glm::vec3(row(mat, 2)) + glm::vec3(row(mat, 3));
-        result = y * glm::vec3(row(mat, 1)) + result;
-        result = y * glm::vec3(row(mat, 0)) + result;
+        glm::vec4 result = z * glm::vec4(row(mat, 2));
+        result = y * glm::vec4(row(mat, 1)) + result;
+        result = x * glm::vec4(row(mat, 0)) + result;
 
         return result;
     }
 
-    inline glm::vec3 vector3LengthSq(glm::vec3 vec) {
+    inline glm::vec4 vector3Transform(glm::vec4 vec, glm::mat4 mat) {
+        glm::vec4 z = glm::vec4(vec[2], vec[2], vec[2], vec[2]);
+        glm::vec4 y = glm::vec4(vec[1], vec[1], vec[1], vec[1]);
+        glm::vec4 x = glm::vec4(vec[0], vec[0], vec[0], vec[0]);
+
+        glm::vec4 result = z * glm::vec4(row(mat, 2)) + glm::vec4(row(mat, 3));
+        result = y * glm::vec4(row(mat, 1)) + result;
+        result = y * glm::vec4(row(mat, 0)) + result;
+
+        return result;
+    }
+
+    inline glm::vec4 vector3LengthSq(glm::vec4 vec) {
         float dot = glm::dot(vec, vec);
-        return glm::vec3(dot, dot, dot);
+        return glm::vec4(dot, dot, dot, dot);
     }
 
-    inline glm::vec3 vector3Length(glm::vec3 vec) {
-        glm::vec3 result = vector3LengthSq(vec);
+    inline glm::vec4 vector3Length(glm::vec4 vec) {
+        glm::vec4 result = vector3LengthSq(vec);
         result[0] = sqrt(result[0]);
         result[1] = sqrt(result[1]);
         result[2] = sqrt(result[2]);
+        result[3] = sqrt(result[3]);
         return result;
     }
 
-    inline glm::vec3 vector3Normalize(glm::vec3 vec) {
+    inline glm::vec4 vector3Normalize(glm::vec4 vec) {
         float len = glm::length(vec);
-        glm::vec3 result = vector3Length(vec);
 
         if (len > 0) len = 1.0f / len;
-        return (result * len);
+        return (vec * len);
     }
 
     /*
@@ -81,25 +81,25 @@ namespace libtennis{
     */
 
 
-    inline glm::vec3 getVectorConnnectingCenters(const glm::mat4& obj2World_A, const glm::mat4& obj2World_B)
+    inline glm::vec4 getVectorConnnectingCenters(const glm::mat4& obj2World_A, const glm::mat4& obj2World_B)
     {
-        const glm::vec3 centerWorld_A = vector3Transform(glm::vec3(0, 0, 0), obj2World_A);
-        const glm::vec3 centerWorld_B = vector3Transform(glm::vec3(0, 0, 0), obj2World_B);
+        const glm::vec4 centerWorld_A = vector3Transform(glm::vec4(0, 0, 0, 0), obj2World_A);
+        const glm::vec4 centerWorld_B = vector3Transform(glm::vec4(0, 0, 0, 0), obj2World_B);
         return centerWorld_B - centerWorld_A;
 
     }
 
     // Get Corners
-    inline std::vector<glm::vec3> getCorners(const glm::mat4& obj2World)
+    inline std::vector<glm::vec4> getCorners(const glm::mat4& obj2World)
     {
-        const glm::vec3 centerWorld = vector3Transform(glm::vec3(0, 0, 0), obj2World);
-        glm::vec3 edges[3];
+        const glm::vec4 centerWorld = vector3Transform(glm::vec4(0, 0, 0, 0), obj2World);
+        glm::vec4 edges[3];
         for (size_t i = 0; i < 3; ++i) {
-            glm::vec3 vec = glm::vec3(0, 0, 0);
+            glm::vec4 vec = glm::vec4(0, 0, 0, 0);
             vec[i] = 0.5f;
             edges[i] = vector3TransformNormal(vec, obj2World);
         }
-        std::vector<glm::vec3> results;
+        std::vector<glm::vec4> results;
         results.push_back(centerWorld - edges[0] - edges[1] - edges[2]);
         results.push_back(centerWorld + edges[0] - edges[1] - edges[2]);
         results.push_back(centerWorld - edges[0] + edges[1] - edges[2]);
@@ -112,12 +112,12 @@ namespace libtennis{
     }
 
     // Get Rigid Box Size
-    inline glm::vec3 getBoxSize(const glm::mat4& obj2World)
+    inline glm::vec4 getBoxSize(const glm::mat4& obj2World)
     {
-        glm::vec3 size(0, 0, 0);
-        glm::vec3 edges[3];
+        glm::vec4 size(0, 0, 0, 0);
+        glm::vec4 edges[3];
         for (size_t i = 0; i < 3; ++i){
-            glm::vec3 vec = glm::vec3(0, 0, 0);
+            glm::vec4 vec = glm::vec4(0, 0, 0, 0);
             vec[i] = 0.5f;
             edges[i] = vector3TransformNormal(vec, obj2World);
             size[i] = 2.0f * glm::length(edges[i]);
@@ -126,16 +126,15 @@ namespace libtennis{
     }
 
     // Get the Normal to the faces
-    inline std::vector<glm::vec3> getAxisNormalToFaces(const glm::mat4& obj2World)
+    inline std::vector<glm::vec4> getAxisNormalToFaces(const glm::mat4& obj2World)
     {
-        std::vector<glm::vec3> edges;
-        glm::vec3 xaxis = glm::vec3(1, 0, 0);
-        glm::vec3 yaxis = glm::vec3(0, 1, 0);
-        glm::vec3 zaxis = glm::vec3(0, 0, 1);
-        glm::vec3 edge1 = vector3Normalize(vector3TransformNormal(xaxis, obj2World));
-        glm::vec3 edge2 = vector3Normalize(vector3TransformNormal(yaxis, obj2World));
-        glm::vec3 edge3 = vector3Normalize(vector3TransformNormal(zaxis, obj2World));
-        std::vector<glm::vec3> results;
+        std::vector<glm::vec4> edges;
+        glm::vec4 xaxis = glm::vec4(1, 0, 0, 1);
+        glm::vec4 yaxis = glm::vec4(0, 1, 0, 1);
+        glm::vec4 zaxis = glm::vec4(0, 0, 1, 1);
+        glm::vec4 edge1 = vector3Normalize(vector3TransformNormal(xaxis, obj2World));
+        glm::vec4 edge2 = vector3Normalize(vector3TransformNormal(yaxis, obj2World));
+        glm::vec4 edge3 = vector3Normalize(vector3TransformNormal(zaxis, obj2World));
         edges.push_back(edge1);
         edges.push_back(edge2);
         edges.push_back(edge3);
@@ -144,17 +143,17 @@ namespace libtennis{
 
 
     // Get the pair of edges
-    inline std::vector<glm::vec3> getPairOfEdges(const glm::mat4& obj2World_A, const glm::mat4& obj2World_B)
+    inline std::vector<glm::vec4> getPairOfEdges(const glm::mat4& obj2World_A, const glm::mat4& obj2World_B)
     {
-        std::vector<glm::vec3> edges1 = getAxisNormalToFaces(obj2World_A);
-        std::vector<glm::vec3> edges2 = getAxisNormalToFaces(obj2World_B);
+        std::vector<glm::vec4> edges1 = getAxisNormalToFaces(obj2World_A);
+        std::vector<glm::vec4> edges2 = getAxisNormalToFaces(obj2World_B);
 
-        std::vector<glm::vec3> results;
+        std::vector<glm::vec4> results;
         for (int i = 0; i < edges1.size(); i++)
         {
             for (int j = 0; j<edges2.size(); j++)
             {
-                glm::vec3 vector = glm::cross(edges1[i], edges2[j]);
+                glm::vec4 vector = glm::vec4(glm::cross(glm::vec3(edges1[i]), glm::vec3(edges2[j])), 0.0f);
 
                 if (glm::length(vector) > 0)
                     results.push_back(vector3Normalize(vector));
@@ -164,10 +163,10 @@ namespace libtennis{
     }
 
     // project a shape on an axis
-    inline Projection project(const glm::mat4& obj2World, glm::vec3 axis)
+    inline Projection project(const glm::mat4& obj2World, glm::vec4 axis)
     {
         // Get corners
-        std::vector<glm::vec3> cornersWorld = getCorners(obj2World);
+        std::vector<glm::vec4> cornersWorld = getCorners(obj2World);
         float min = glm::dot(cornersWorld[0], axis);
         float max = min;
         for (int i = 1; i < cornersWorld.size(); i++)
@@ -197,11 +196,11 @@ namespace libtennis{
     }
 
     static inline glm::vec3 contactPoint(
-            const glm::vec3 &pOne,
-            const glm::vec3 &dOne,
+            const glm::vec4 &pOne,
+            const glm::vec4 &dOne,
             float oneSize,
-            const glm::vec3 &pTwo,
-            const glm::vec3 &dTwo,
+            const glm::vec4 &pTwo,
+            const glm::vec4 &dTwo,
             float twoSize,
 
             // If this is true, and the contact point is outside
@@ -209,7 +208,7 @@ namespace libtennis{
             // we use one's midpoint, otherwise we use two's.
             bool useOne)
     {
-        glm::vec3 toSt, cOne, cTwo;
+        glm::vec4 toSt, cOne, cTwo;
         float dpStaOne, dpStaTwo, dpOneTwo, smOne, smTwo;
         float denom, mua, mub;
 
@@ -251,11 +250,11 @@ namespace libtennis{
         }
     }
 
-    inline glm::vec3 handleVertexToface(const glm::mat4& obj2World, const glm::vec3& toCenter)
+    inline glm::vec3 handleVertexToface(const glm::mat4& obj2World, const glm::vec4& toCenter)
     {
-        std::vector<glm::vec3> corners = getCorners(obj2World);
+        std::vector<glm::vec4> corners = getCorners(obj2World);
         float min = 1000;
-        glm::vec3 vertex;
+        glm::vec4 vertex;
         for (int i = 0; i < corners.size(); i++)
         {
             float value = glm::dot(corners[i], toCenter);
@@ -276,14 +275,14 @@ namespace libtennis{
         info.isValid = false;
         glm::vec3 collisionPoint(0, 0, 0);
         float smallOverlap = 10000.0f;
-        glm::vec3 axis;
+        glm::vec4 axis;
         int index;
         int fromWhere = -1;
         bool bestSingleAxis = false;
-        glm::vec3 toCenter = getVectorConnnectingCenters(obj2World_A, obj2World_B);
-        std::vector<glm::vec3> axes1 = getAxisNormalToFaces(obj2World_A);
-        std::vector<glm::vec3> axes2 = getAxisNormalToFaces(obj2World_B);
-        std::vector<glm::vec3> axes3 = getPairOfEdges(obj2World_A, obj2World_B);
+        glm::vec4 toCenter = getVectorConnnectingCenters(obj2World_A, obj2World_B);
+        std::vector<glm::vec4> axes1 = getAxisNormalToFaces(obj2World_A);
+        std::vector<glm::vec4> axes2 = getAxisNormalToFaces(obj2World_B);
+        std::vector<glm::vec4> axes3 = getPairOfEdges(obj2World_A, obj2World_B);
         // loop over the axes1
         for (int i = 0; i < axes1.size(); i++) {
             // project both shapes onto the axis
@@ -358,7 +357,7 @@ namespace libtennis{
         }
         // if we get here then we know that every axis had overlap on it
         // so we can guarantee an intersection
-        glm::vec3 normal;
+        glm::vec4 normal;
         switch (fromWhere){
             case 0:{
                 normal = axis;
@@ -377,14 +376,14 @@ namespace libtennis{
                 collisionPoint = handleVertexToface(obj2World_A, toCenter * (-1.0f));
             }break;
             case 2:{
-                glm::vec3 axis = vector3Normalize(glm::cross(axes1[whichEdges / 3], axes2[whichEdges % 3]));
+                glm::vec4 axis = vector3Normalize(glm::vec4(glm::cross(glm::vec3(axes1[whichEdges / 3]), glm::vec3(axes2[whichEdges % 3])), 0.0f));
                 normal = axis;
                 if (glm::dot(axis, toCenter) <= 0)
                 {
                     normal = normal * -1.0f;
                 }
-                glm::vec3 ptOnOneEdge(0.5, 0.5, 0.5);
-                glm::vec3 ptOnTwoEdge(0.5, 0.5, 0.5);
+                glm::vec4 ptOnOneEdge(0.5, 0.5, 0.5, 1);
+                glm::vec4 ptOnTwoEdge(0.5, 0.5, 0.5, 1);
 
                 for (int i = 0; i < 3; i++)
                 {
@@ -431,8 +430,8 @@ obj2World_B, the transfer matrix from object space of B to the world space
 */
 inline CollisionInfo checkCollisionSAT(glm::mat4 obj2World_A, glm::mat4 obj2World_B) {
     using namespace libtennis;
-    glm::vec3 calSizeA = getBoxSize(obj2World_A);
-    glm::vec3 calSizeB = getBoxSize(obj2World_B);
+    glm::vec4 calSizeA = getBoxSize(obj2World_A);
+    glm::vec4 calSizeB = getBoxSize(obj2World_B);
 
     return checkCollisionSATHelper(obj2World_A, obj2World_B, calSizeA, calSizeB);
 }

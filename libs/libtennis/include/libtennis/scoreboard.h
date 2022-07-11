@@ -10,13 +10,10 @@ namespace libtennis {
     private:
         int player1Score = 0;
         int player2Score = 0;
-        int maximumGame = 1;
         int maximumScore = 11;
 
-        int currentGame = 1;
     public:
         scoreboard() = default;
-        scoreboard(int maximumGame, int maximumScore);
 
         void setPlayer1Score(int score);
         int getPlayer1Score();
@@ -24,11 +21,10 @@ namespace libtennis {
         void setPlayer2Score(int score);
         int getPlayer2Score();
 
-        void setCurrentGame(int game);
-        int getCurrentGame();
+        void setMaximumScore(int maximumScore);
+        int getMaximumScore();
 
         bool checkGameEnd();
-        bool checkMatchEnd();
     };
 }
 

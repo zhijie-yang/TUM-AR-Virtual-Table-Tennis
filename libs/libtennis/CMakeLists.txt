@@ -1,5 +1,10 @@
 project(tennis)
 
+# Set LIBS and use it to source libframework headers
+set(LIBS ${CMAKE_SOURCE_DIR}/libs)
+# Add libframework headers to include path
+include_directories(${LIBS})
+
 add_library(${PROJECT_NAME}
 	"src/libtennis/priv-impl.cpp"
 	"src/libtennis/ball.cpp"

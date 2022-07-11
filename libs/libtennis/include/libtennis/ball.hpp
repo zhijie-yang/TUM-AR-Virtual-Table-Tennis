@@ -8,8 +8,8 @@ namespace libtennis {
 	private:
 		glm::vec3 _position;
 		glm::vec3 _velocity;
-        const float _radius = 0.2; // centimeter
-        const float _mass = 2.5; // gram
+        float _radius = 0.045; // meter
+        float _mass = 0.0025; // gram
 
 	public:
 		ball() = default;

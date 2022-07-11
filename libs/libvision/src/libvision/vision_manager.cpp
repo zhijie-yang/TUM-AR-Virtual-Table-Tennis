@@ -63,6 +63,43 @@ public:
 
         return 0;
     }
+
+    int racket1_serialize(const std::function<int(float*)>& processor)
+    {
+        glm::mat4 model = glm::translate(glm::vec3(0.7625f, 0.3f, 1.37f))
+                          * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f))
+                          * glm::mat4(1.0f);
+        float arr_model[16] = {
+                model[0][0], model[0][1], model[0][2], model[0][3],
+                model[1][0], model[1][1], model[1][2], model[1][3],
+                model[2][0], model[2][1], model[2][2], model[2][3],
+                model[3][0], model[3][1], model[3][2], model[3][3]};
+        return processor(arr_model);
+    }
+
+    int racket2_serialize(const std::function<int(float*)>& processor)
+    {
+        glm::mat4 model = glm::translate(glm::vec3(-0.7625f, 0.3f, -1.37f))
+                          * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f))
+                          * glm::mat4(1.0f);
+        float arr_model[16] = {
+                model[0][0], model[0][1], model[0][2], model[0][3],
+                model[1][0], model[1][1], model[1][2], model[1][3],
+                model[2][0], model[2][1], model[2][2], model[2][3],
+                model[3][0], model[3][1], model[3][2], model[3][3]};
+        return processor(arr_model);
+    }
+
+    int table_serialize(const std::function<int(float*)>& processor)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        float arr_model[16] = {
+                model[0][0], model[0][1], model[0][2], model[0][3],
+                model[1][0], model[1][1], model[1][2], model[1][3],
+                model[2][0], model[2][1], model[2][2], model[2][3],
+                model[3][0], model[3][1], model[3][2], model[3][3]};
+        return processor(arr_model);
+    }
 };
 
 vision_manager::vision_manager()
@@ -100,4 +137,16 @@ int vision_manager::term()
 int vision_manager::capture_serialize(const std::function<int(void*, int, int, int)>& processor)
 {
     return _impl->capture_serialize(processor);
+}
+
+int vision_manager::racket1_serialize(const std::function<int(float *)> &processor) {
+    return _impl->racket1_serialize(processor);
+}
+
+int vision_manager::racket2_serialize(const std::function<int(float *)> &processor) {
+    return _impl->racket2_serialize(processor);
+}
+
+int vision_manager::table_serialize(const std::function<int(float *)> &processor) {
+    return _impl->table_serialize(processor);
 }

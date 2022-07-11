@@ -5,11 +5,6 @@
 #include "libtennis/scoreboard.h"
 using namespace libtennis;
 
-scoreboard::scoreboard(int maximumGame, int maximumScore) {
-    this->maximumScore = maximumScore;
-    this->maximumGame = maximumGame;
-}
-
 void scoreboard::setPlayer1Score(int score) {
     this->player1Score = score;
 }
@@ -26,18 +21,14 @@ int scoreboard::getPlayer2Score() {
     return this->player2Score;
 }
 
-void scoreboard::setCurrentGame(int game) {
-    this->currentGame = game;
+void scoreboard::setMaximumScore(int maximumScore) {
+    this->maximumScore = maximumScore;
 }
 
-int scoreboard::getCurrentGame() {
-    return this->currentGame;
+int scoreboard::getMaximumScore() {
+    return this->maximumScore;
 }
 
 bool scoreboard::checkGameEnd() {
     return this->player1Score >= this->maximumScore || this->player2Score >= this->maximumScore;
-}
-
-bool scoreboard::checkMatchEnd() {
-    return this->currentGame > this->maximumGame;
 }

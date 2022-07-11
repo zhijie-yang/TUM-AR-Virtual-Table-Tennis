@@ -81,6 +81,10 @@ target_link_libraries(${PROJECT_NAME}
 		${LIBS}
 )
 
+set(LIBS ${CMAKE_SOURCE_DIR}/libs)
+# Add libframework headers to include path
+include_directories(${LIBS})
+
 target_include_directories(${PROJECT_NAME}
 	PUBLIC
 		$<INSTALL_INTERFACE:include>

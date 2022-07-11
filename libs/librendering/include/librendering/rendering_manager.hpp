@@ -36,10 +36,10 @@ namespace librendering {
 
 		std::function<int(const glm::mat4&)> proj_deserialize();
 		std::function<int(const glm::mat4&)> view_deserialize();
-		std::function<int(const glm::mat4&)> racket1_deserialize();
-		std::function<int(const glm::mat4&)> racket2_deserialize();
-		std::function<int(const glm::mat4&)> ball_deserialize();
-		std::function<int(const glm::mat4&)> table_deserialize();
+        std::function<int(float*)> racket1_deserialize();
+        std::function<int(float*)> racket2_deserialize();
+        std::function<int(float*)> ball_deserialize();
+        std::function<int(float*)> table_deserialize();
 
 		std::function<int(const int&)> score1_deserialize();
 		std::function<int(const int&)> score2_deserialize();
