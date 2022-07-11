@@ -86,6 +86,8 @@ private:
     std::string _player1Name, _player2Name;
     
     rendering_manager::scene _scene;
+
+    bool _gameEnd = false;
 public:
     // camera
     Camera camera;
@@ -178,7 +180,7 @@ public:
     {
         return [&](float* data) -> int
         {
-            glm::vec3 table_scale = Constant::table_scale;
+            glm::vec3 table_scale = CONST_TABLE_SCALE;
             float net_height = table_scale.y;
             table_scale.y = table_scale.z;
             table_scale.z = net_height;
@@ -277,6 +279,15 @@ public:
         };
     }
 
+    std::function<int(const bool&)> game_status_deserialize()
+    {
+        return [&](const float& value) -> int
+        {
+            _gameEnd = value;
+            return 0;
+        };
+    }
+
     std::function<int(void*, int, int, int)> capture_deserialize()
     {
         return [&](void* data, int rows, int cols, int channels) -> int
@@ -290,6 +301,10 @@ public:
     int frametime_serialize(const std::function<int(float)>& processor)
     {
         return processor(_deltaTime);
+    }
+
+    int game_status_serialize(const std::function<int(bool)>& processor) {
+        return processor(_gameEnd);
     }
 
 #pragma region Properties
@@ -556,6 +571,12 @@ public:
                 auto* viewport = ImGui::GetMainViewport();
                 ImVec2 center = viewport->GetCenter();
                 ImVec2 brCorner = viewport->WorkSize;
+
+                if(_gameEnd) {
+                    scene_set(rendering_manager::scene::main_menu);
+                    _gameEnd = false;
+                }
+
                 switch (_scene) {
                     case rendering_manager::scene::main_menu:
                     {
@@ -567,7 +588,7 @@ public:
                         auto& style = ImGui::GetStyle();
                         auto buttonWidth = ImGui::GetWindowWidth() - style.WindowPadding.x * 2.f;
                         auto buttonHeight = 0.0f;
-                        
+
                         if (ImGui::Button("Play", ImVec2(buttonWidth, buttonHeight))) {
                             scene_set(rendering_manager::scene::connection);
                         }
@@ -596,13 +617,15 @@ public:
                         if (ImGui::InputInt("Port", &_port)) {}
 
                         if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            // TODO: Call networking
                             scene_set(rendering_manager::scene::level);
+                            // TODO: start a server
+
+                            // TODO: call client.connectServer
                         }
                         ImGui::SameLine();
                         if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            // TODO: Call some more networking
                             scene_set(rendering_manager::scene::level);
+                            // TODO: call client.connectServer
                         }
                         if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
                             scene_set(rendering_manager::scene::main_menu);
@@ -907,7 +930,16 @@ std::function<int(const char*)> rendering_manager::player2_deserialize()
     return _impl->player2_deserialize();
 }
 
+std::function<int(const bool&)> rendering_manager::game_status_deserialize()
+{
+    return _impl->game_status_deserialize();
+}
+
 int rendering_manager::frametime_serialize(const std::function<int(float)>& processor)
 {
     return _impl->frametime_serialize(processor);
+}
+
+int rendering_manager::game_status_serialize(const std::function<int(bool)>& processor) {
+    return _impl->game_status_serialize(processor);
 }

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <libtennis/ball.hpp>
 #include <librendering/rendering_manager.hpp>
 #include <libvision/vision_manager.hpp>
 #include "libtennis/tennis_manager.h"
@@ -42,6 +41,9 @@ int main(int, char **) {
 
 	while (!rendering.quit_get()) {
 		if (!rendering.paused_get()) {
+            // TODO: receive from server
+            // get enemy's racket status
+            // get ball status
             rendering.frametime_serialize(tennis.frametime_deserialize());
 
 			if (vision.run_tick()) {
@@ -64,11 +66,17 @@ int main(int, char **) {
             tennis.ball_serialize(rendering.ball_deserialize());
             tennis.score1_serialize(rendering.score1_deserialize());
             tennis.score2_serialize(rendering.score2_deserialize());
+            tennis.game_status_serialize(rendering.game_status_deserialize());
 		}
+
+        // TODO: only the turn owner send latest ball status to server
+        // TODO: each user should send racket status
+
 		if (rendering.run_tick()) {
 			cerr << "Failed to run tick rendering.\n";
 			break;
 		}
+        rendering.game_status_serialize(tennis.game_status_deserialize());
 	}
 
 	if (rendering.term()) {

@@ -47,9 +47,10 @@ namespace librendering {
 		std::function<int(const int&)> match2_deserialize();
 		std::function<int(const char*)> player1_deserialize();
 		std::function<int(const char*)> player2_deserialize();
-
+        std::function<int(const bool&)> game_status_deserialize();
 
 		int frametime_serialize(const std::function<int(float)>& processor);
+        int game_status_serialize(const std::function<int(bool)>& processor);
 
 		int init(const rendering_settings& settings);
 		int run_tick();

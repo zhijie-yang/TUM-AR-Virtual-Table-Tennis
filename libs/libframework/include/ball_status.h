@@ -55,6 +55,30 @@ public:
         Velocity::fromProto(r.velocity(), out.velocity);
         out.flying_status = static_cast<FlyingStatus>(r.flying_status());
     }
+
+    inline glm::vec3 get_velocity() {
+        return this->velocity.get_linear();
+    }
+
+    inline glm::vec3 get_position() {
+        return this->pose.get_translation();
+    }
+
+    inline glm::mat4 get_pose() {
+        return this->pose.get_transform();
+    }
+
+    inline void set_position(glm::vec3 position) {
+        this->pose.set_translation(position);
+    }
+
+    inline void set_velocity(glm::vec3 velocity) {
+        this->velocity.set_linear(velocity);
+    }
+
+    inline void set_status(FlyingStatus status) {
+        this->flying_status = status;
+    }
 };
 
 #endif // !LIBFRAMEWORK_BALL

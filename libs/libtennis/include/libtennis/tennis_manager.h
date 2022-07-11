@@ -5,7 +5,6 @@
 #ifndef TENNIS_MANAGER
 #define TENNIS_MANAGER
 
-#include "ball.hpp"
 #include <glm/gtx/transform.hpp>
 #include "collisionDetect.h"
 #include "scoreboard.h"
@@ -23,9 +22,11 @@ namespace libtennis {
         std::function<int(float*)> racket1_deserialize();
         std::function<int(float*)> racket2_deserialize();
         std::function<int(float*)> table_deserialize();
+        std::function<int(const bool&)> game_status_deserialize();
         int ball_serialize(const std::function<int(float*)>& processor);
         int score1_serialize(const std::function<int(int)>& processor);
         int score2_serialize(const std::function<int(int)>& processor);
+        int game_status_serialize(const std::function<int(bool)>& processor);
 
     private:
         std::unique_ptr<impl> _impl;
