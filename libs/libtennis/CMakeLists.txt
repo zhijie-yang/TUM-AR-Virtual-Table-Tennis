@@ -1,5 +1,5 @@
 project(tennis)
-
+set(CMAKE_CXX_STANDARD 14)
 # Set LIBS and use it to source libframework headers
 set(LIBS ${CMAKE_SOURCE_DIR}/libs)
 # Add libframework headers to include path

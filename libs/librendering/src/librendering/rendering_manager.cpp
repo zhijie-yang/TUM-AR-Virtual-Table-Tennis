@@ -8,6 +8,13 @@
 #include <memory>
 #include <sstream>
 
+#ifdef __APPLE__
+#define GLFW_INCLUDE_GLCOREARB
+// #define GLFW_INCLUDE_NONE
+#define __gl3_h_
+#define __glext_h_
+#define __gl3ext_h_
+#endif //!__APPLE__
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -343,6 +350,15 @@ public:
         if (!glfwInit())
             return 1;
 
+        const char* glsl_version = "#version 330 core";
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
         _window = glfwCreateWindow(settings.window_width, settings.window_height, "Virtual Tennis", NULL, NULL);
         if (!_window) {
             return 1;
@@ -353,15 +369,6 @@ public:
         glfwSetScrollCallback(_window, scroll_callback);
         //glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        const char* glsl_version = "#version 330 core";
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
         // ---------------------------------------
         // GLAD Initialization
         // ---------------------------------------
@@ -370,6 +377,8 @@ public:
             std::cout << "Failed to initialize GLAD" << std::endl;
             return -1;
         }
+
+        printf("OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
 
         stbi_set_flip_vertically_on_load(true);
 
@@ -446,6 +455,11 @@ public:
 
     int init_frame(const rendering_settings& settings)
     {
+        std::cout << "glGenVertexArrays: " << &glGenVertexArrays << std::endl;
+        if (glGenVertexArrays == nullptr)
+        {
+            std::cout << "Fick mich" << std::endl;
+        }
         glGenVertexArrays(1, &_frameVerticesId);
         glBindVertexArray(_frameVerticesId);
         static const GLfloat g_vertex_buffer_data[] = {
