@@ -378,8 +378,6 @@ public:
             return -1;
         }
 
-        printf("OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
-
         stbi_set_flip_vertically_on_load(true);
 
         glEnable(GL_DEPTH_TEST);
@@ -455,11 +453,6 @@ public:
 
     int init_frame(const rendering_settings& settings)
     {
-        std::cout << "glGenVertexArrays: " << &glGenVertexArrays << std::endl;
-        if (glGenVertexArrays == nullptr)
-        {
-            std::cout << "Fick mich" << std::endl;
-        }
         glGenVertexArrays(1, &_frameVerticesId);
         glBindVertexArray(_frameVerticesId);
         static const GLfloat g_vertex_buffer_data[] = {
