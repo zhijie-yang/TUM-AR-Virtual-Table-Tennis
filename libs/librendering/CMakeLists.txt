@@ -1,5 +1,5 @@
 project(rendering)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenGL REQUIRED)
 
@@ -30,6 +30,7 @@ elseif(APPLE)
   SET(APPLE_LIBS ${COCOA_LIBRARY} ${IOKit_LIBRARY} ${OpenGL_LIBRARY} ${CoreVideo_LIBRARY})
   SET(APPLE_LIBS ${APPLE_LIBS})
   set(LIBS ${LIBS} ${APPLE_LIBS})
+  add_compile_definitions(GL_SILENCE_DEPRECATION)
 else()
   set(LIBS )
 endif(WIN32)
