@@ -89,9 +89,10 @@ GeneralResponse VirtualTennisNetworkClient::sendRacketStatus(RacketStatus& _requ
     return _response;
 }
 
-RacketStatus VirtualTennisNetworkClient::getRacketStatus() {
+RacketStatus VirtualTennisNetworkClient::getRacketStatus(unsigned const& player_id) {
     grpc::ClientContext context;
     libnetwork::RacketStatusRequest request;
+    request.set_player_id(player_id);
     libnetwork::RacketStatus response;
     grpc::Status status = stub_->GetRacketStatus(&context, request, &response);
     RacketStatus _response;
@@ -132,11 +133,10 @@ ScoreBoard VirtualTennisNetworkClient::getScoreBoard() {
     return _response;
 }
 
-GeneralResponse VirtualTennisNetworkClient::changeTurn(ChangeTurnRequest& _request) {
+GeneralResponse VirtualTennisNetworkClient::changeTurn() {
     grpc::ClientContext context;
     libnetwork::ChangeTurnRequest request;
     libnetwork::GeneralResponse response;
-    _request.toProto(request);
     grpc::Status status = stub_->ChangeTurn(&context, request, &response);
     GeneralResponse _response;
     if (status.ok()) {
@@ -190,6 +190,30 @@ RoundEndingResponse VirtualTennisNetworkClient::endRound(RoundEndingRequest& _re
     }
     return _response;
 }
+
+bool VirtualTennisNetworkClient::onVisionTickEnd(RacketStatus& r) {
+    auto status = sendRacketStatus(r);
+    return status.get_result();
+}
+bool VirtualTennisNetworkClient::onTennisTickEnd(BallStatus& ball_status,
+                ScoreBoard& score_board, bool& change_turn) {
+                    bool status = true;
+                    status &= sendBallStatus(ball_status).get_result();
+                    status &= sendScoreBoard(score_board).get_result();
+                    if (change_turn) {
+                        status &= changeTurn().get_result();
+                    }
+                    return status;
+}
+
+void VirtualTennisNetworkClient::RenderingTickBegin(unsigned const& player_id,
+                RacketStatus& racket_status, BallStatus& ball_status,
+                ScoreBoard& score_board, unsigned& turn_owner) {
+                    racket_status = getRacketStatus(player_id);
+                    ball_status = getBallStatus();
+                    score_board = getScoreBoard();
+                    turn_owner = getCurrentTurn();
+                }
 
 
 int main(int argc, char** argv) {

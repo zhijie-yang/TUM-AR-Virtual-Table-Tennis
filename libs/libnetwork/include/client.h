@@ -22,13 +22,18 @@ public:
     GeneralResponse sendBallStatus(BallStatus& _request);
     BallStatus getBallStatus();
     GeneralResponse sendRacketStatus(RacketStatus& _request);
-    RacketStatus getRacketStatus();
+    RacketStatus getRacketStatus(unsigned const& player_id);
     GeneralResponse sendScoreBoard(ScoreBoard& _request);
     ScoreBoard getScoreBoard();
-    GeneralResponse changeTurn(ChangeTurnRequest& _request);
+    GeneralResponse changeTurn();
     unsigned getCurrentTurn();
     StartNewRoundResponse startNewRound(StartNewRoundRequest& _request);
     RoundEndingResponse endRound(RoundEndingRequest& _request);
+    bool onVisionTickEnd(RacketStatus& r);
+    bool onTennisTickEnd(BallStatus& ball_status, ScoreBoard& score_board, bool& change_turn);
+    void RenderingTickBegin(unsigned const& player_id,
+                RacketStatus& racket_status, BallStatus& ball_status,
+                ScoreBoard& score_board, unsigned& turn_owner);
 
 private:
     std::unique_ptr<libnetwork::VirtualTennis::Stub> stub_;

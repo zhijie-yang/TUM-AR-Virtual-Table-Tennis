@@ -2,6 +2,11 @@
 #include <librendering/rendering_manager.hpp>
 #include <libvision/vision_manager.hpp>
 #include "libtennis/tennis_manager.h"
+#include "libframework/include/ball_status.h"
+#include "libframework/include/racket_status.h"
+#include "libframework/include/infos.h"
+#include "libnetwork/include/client.h"
+
 
 using namespace std;
 using namespace libtennis;

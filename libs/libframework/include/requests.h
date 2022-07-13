@@ -5,37 +5,6 @@
 #include "infos.h"
 #include "libnetwork/proto_src/network.pb.h"
 
-class ChangeTurnRequest {
-public:
-    ChangeTurnRequest(){}
-    ChangeTurnRequest(unsigned const& new_id) {
-        this->new_id = new_id;
-    }
-    ~ChangeTurnRequest(){}
-
-private:
-    unsigned new_id;
-
-public:
-    inline unsigned get_new_id() {
-        return this->new_id;
-    }
-
-    inline void toProto(libnetwork::ChangeTurnRequest& r) {
-        r.set_new_id(this->new_id);
-    }
-
-    inline libnetwork::ChangeTurnRequest* toProtoAllocated() {
-        auto r = new libnetwork::ChangeTurnRequest();
-        r->set_new_id(this->new_id);
-        return r;
-    }
-
-    inline static void fromProto(const libnetwork::ChangeTurnRequest &r, ChangeTurnRequest &out) {
-        out.new_id = r.new_id();
-    }
-};
-
 class StartNewRoundRequest {
 public:
     StartNewRoundRequest(){}

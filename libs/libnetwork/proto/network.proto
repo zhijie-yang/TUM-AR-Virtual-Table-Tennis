@@ -76,7 +76,6 @@ message RacketStatus {
 }
 
 message ChangeTurnRequest {
-    uint32 new_id = 1;
 }
 
 message StartNewRoundRequest {
@@ -122,6 +121,7 @@ message BallStatusRequest {
 }
 
 message RacketStatusRequest {
+    uint32 player_id = 1;
 }
 
 message ScoreBoardRequest {
