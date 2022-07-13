@@ -62,17 +62,13 @@ private:
 		std::vector<std::vector<cv::Point3f>> objectPoints(3);
 		markerImage = cv::imread("../data/marker.png");
 		cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
-		float middle_x;
-		float middle_y;
 
-		middle_x = (markerCorners[1][0].x + markerCorners[1][1].x + markerCorners[1][2].x + markerCorners[1][3].x) / 4;
-		middle_y = (markerCorners[1][0].y + markerCorners[1][1].y + markerCorners[1][2].y + markerCorners[1][3].y) / 4;
 
 		for (size_t i = 0; i < MARKERS_NUM; i++)
 		{
 			for (size_t j = 0; j < 4; j++)
 			{
-				objectPoints[i].push_back(Point3f(markerCorners[i][j].x - middle_x, markerCorners[i][j].y - middle_y, 0.0));
+				objectPoints[i].push_back(Point3f(markerCorners[i][j].x , markerCorners[i][j].y , 0.0));
 			}
 		}
 		_board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
@@ -190,7 +186,7 @@ private:
 		_board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
 		_board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
 		_board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
-
+		//cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE / 2);
 		std::vector<cv::Matx31d> rvecs, tvecs;
 
 		cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
