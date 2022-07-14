@@ -460,7 +460,7 @@ public:
         }
         _detect_markers();
         _estimate_position();
-        // TODO @hdghdAFS return (or serialize) RacketStatus to the main function
+        
         return 0;
     }
 
@@ -533,6 +533,16 @@ public:
                 _proj[1][0], _proj[1][1], _proj[1][2], _proj[1][3],
                 _proj[2][0], _proj[2][1], _proj[2][2], _proj[2][3],
                 _proj[3][0], _proj[3][1], _proj[3][2], _proj[3][3]};
+        return processor(arr_model);
+    }
+    
+    int racket2table_serialize(const std::function<int(float*)>& processor)
+    {
+        float arr_model[16] = {
+                _racket2table[0][0], _racket2table[0][1], _racket2table[0][2], _racket2table[0][3],
+                _racket2table[1][0], _racket2table[1][1], _racket2table[1][2], _racket2table[1][3],
+                _racket2table[2][0], _racket2table[2][1], _racket2table[2][2], _racket2table[2][3],
+                _racket2table[3][0], _racket2table[3][1], _racket2table[3][2], _racket2table[3][3]};
         return processor(arr_model);
     }
 };
