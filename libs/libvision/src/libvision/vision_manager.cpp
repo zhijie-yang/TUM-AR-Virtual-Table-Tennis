@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 #include <opencv2/core/types_c.h>
 #include <opencv2/video/tracking.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 using namespace libvision;
 using namespace cv;
@@ -19,6 +18,8 @@ using namespace std;
 #define VIEW_POINTS 8
 #define MARKER_SIZE 0.07 // unit:meter
 #define MARKER_PIXEL 199
+#define STATES 12
+#define MEASURES 6
 class vision_manager::impl {
 private:
 	cv::VideoCapture _cap;
@@ -31,8 +32,56 @@ private:
 	std::vector<int> _markerIds;
 	cv::Ptr<cv::aruco::Board> _board;
 	cv::Matx31d _board_rvec, _board_tvec;
-    cv::KalmanFilter _KF;
+    cv::KalmanFilter _KalmanFilter;
+    bool _found = false;
+    double _dt;
+    double _ticks = 0;
+    void _initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements, int nInputs)
+    {
+        KF.init(nStates, nMeasurements, nInputs, CV_64F);                 // init Kalman Filter
+        cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-5));       // set process noise
+        cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-4));   // set measurement noise
+        cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));             // error covariance
+        cv::setIdentity(KF.transitionMatrix);
+        // transition matrix
+        //  [1 0 0 dt  0  0   0   0   0  0  0  0]
+        //  [0 1 0  0 dt  0   0   0   0  0  0  0]
+        //  [0 0 1  0  0 dt   0   0   0  0  0  0]
+        //  [0 0 0  1  0  0   0   0   0  0  0  0]
+        //  [0 0 0  0  1  0   0   0   0  0  0  0]
+        //  [0 0 0  0  0  1   0   0   0  0  0  0]
+        //  [0 0 0  0  0  0   1   0   0 dt  0  0]
+        //  [0 0 0  0  0  0   0   1   0  0 dt  0]
+        //  [0 0 0  0  0  0   0   0   1  0  0 dt]
+        //  [0 0 0  0  0  0   0   0   0  1  0  0]
+        //  [0 0 0  0  0  0   0   0   0  0  1  0]
+        //  [0 0 0  0  0  0   0   0   0  0  0  1]
 
+
+
+        /* MEASUREMENT MODEL */
+        //  [1 0 0 0 0 0 0 0 0 0 0 0]
+        //  [0 1 0 0 0 0 0 0 0 0 0 0]
+        //  [0 0 1 0 0 0 0 0 0 0 0 0]
+        //  [0 0 0 0 0 0 1 0 0 0 0 0]
+        //  [0 0 0 0 0 0 0 1 0 0 0 0]
+        //  [0 0 0 0 0 0 0 0 1 0 0 0]
+        KF.measurementMatrix.at<double>(0,0) = 1;
+        KF.measurementMatrix.at<double>(1,1) = 1;
+        KF.measurementMatrix.at<double>(2,2) = 1;
+        KF.measurementMatrix.at<double>(3,6) = 1;
+        KF.measurementMatrix.at<double>(4,7) = 1;
+        KF.measurementMatrix.at<double>(5,8) = 1;
+    }
+    void _set_transition_matrix(cv::KalmanFilter &KF, double dt)
+    {
+        KF.transitionMatrix.at<double>(0,3) = dt;
+        KF.transitionMatrix.at<double>(1,4) = dt;
+        KF.transitionMatrix.at<double>(2,5) = dt;
+        KF.transitionMatrix.at<double>(6,9) = dt;
+        KF.transitionMatrix.at<double>(7,10) = dt;
+        KF.transitionMatrix.at<double>(8,11) = dt;
+    }
     glm::mat4 _fill_mat4(cv::Matx31d rvec,cv::Matx31d tvec)
 	{
 		glm::mat4 _result;
@@ -42,13 +91,13 @@ private:
 		{
 			for (int j = 0; j < 3; j++)
 			{
-				_result[i][j] = rmat.val[i + j * 3];
+				_result[i][j] = (float)rmat.val[i + j * 3];
 			}
 			_result[i][3] = 0.0f;
 		}
 		for (int j = 0; j < 3; j++)
 		{
-			_result[3][j] = tvec.val[j];
+			_result[3][j] = (float)tvec.val[j];
 		}
 		_result[3][3] = 1.0f;	
 		return _result;	
@@ -172,13 +221,13 @@ private:
 			std::cerr << "Failed to detect markers"<< std::endl;
 			return -1;
 		}
-
+        _set_transition_matrix(_KalmanFilter,_dt);
 		return 0;
 	}
 
 	int _estimate_position()
 	{
-		int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec);
+        int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec);
 		if (valid == 0)
 		{
 			std::cerr << "Estimation failed"<< std::endl;
@@ -187,7 +236,45 @@ private:
 		_board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
 		_board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
 		_board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
-		cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE / 2);
+        if (_found)
+        {
+            cv::Mat predict_state = _KalmanFilter.predict();
+            cv::Mat meas(MEASURES, 1, CV_64F, Scalar(0));
+            meas.at<double>(0) = _board_tvec.val[0];
+            meas.at<double>(1) = _board_tvec.val[1];
+            meas.at<double>(2) = _board_tvec.val[2];
+            meas.at<double>(3) = _board_rvec.val[0];
+            meas.at<double>(4) = _board_rvec.val[1];
+            meas.at<double>(5) = _board_rvec.val[2];
+            _KalmanFilter.correct(meas);
+            _board_tvec.val[0] = predict_state.at<double>(0);
+            _board_tvec.val[1] = predict_state.at<double>(1);
+            _board_tvec.val[2] = predict_state.at<double>(2);
+            _board_rvec.val[0] = predict_state.at<double>(3);
+            _board_rvec.val[1] = predict_state.at<double>(4);
+            _board_rvec.val[2] = predict_state.at<double>(5);
+        }
+        else
+        {
+            cv::Mat init_state(STATES,1,CV_64F,Scalar(0));
+            init_state.at<double>(0) = _board_tvec.val[0];
+            init_state.at<double>(1) = _board_tvec.val[1];
+            init_state.at<double>(2) = _board_tvec.val[2];
+            init_state.at<double>(3) = 0.0;
+            init_state.at<double>(4) = 0.0;
+            init_state.at<double>(5) = 0.0;
+            init_state.at<double>(6) = _board_rvec.val[0];
+            init_state.at<double>(7) = _board_rvec.val[1];
+            init_state.at<double>(8) = _board_rvec.val[2];
+            init_state.at<double>(9) = 0.0f;
+            init_state.at<double>(10) = 0.0f;
+            init_state.at<double>(11) = 0.0f;
+            _KalmanFilter.statePost = init_state;
+            _found = true;
+        }
+
+
+        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE);
 		std::vector<cv::Matx31d> rvecs, tvecs;
 
 		cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
@@ -197,7 +284,8 @@ private:
 
 		for (size_t i = 0; i < _markerIds.size(); i++)
 		{
-			if (_markerIds[i] == RACKET_MARKER_ID)
+            //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
+            if (_markerIds[i] == RACKET_MARKER_ID)
 			{
 				rvecs[i] = _transPerspective(rvecs[i]);
 				srvec = rvecs[i];
@@ -260,23 +348,23 @@ public:
 			return -1;
 		}
 		_create_board();
-		//_save_calibrate_paras();
+		_save_calibrate_paras();
 		_read_calibrate_paras();
         _cameraMatrix =cv::getOptimalNewCameraMatrix(_cameraMatrix,_distCoeffs,size,0.5);
-        int nStates = 12;            // the number of states
-        int nMeasurements = 6;       // the number of measured states
-        int nInputs = 0;             // the number of action control
-        double dt = 0.125;           // time between measurements (1/FPS)
-        //initKalmanFilter(_KF, nStates, nMeasurements, nInputs, dt);    // init function
+
+        _initKalmanFilter(_KalmanFilter, STATES, MEASURES, 0);    // init function
 
         return 0;
 	}
 
 	int run_tick()
 	{
-		_cap >> _frame;
+        double precTick = _ticks;
+        _ticks = (double) cv::getTickCount();
+        _dt = (_ticks - precTick) / cv::getTickFrequency();
+        _cap >> _frame;
 
-		if (_frame.empty())
+        if (_frame.empty())
 		{
 			std::cerr << "Failed to capture frame"<< std::endl;
 			return -1;
