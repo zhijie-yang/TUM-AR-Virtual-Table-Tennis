@@ -598,3 +598,7 @@ int vision_manager::proj_serialize(const std::function<int(float *)> &processor)
 int vision_manager::view_serialize(const std::function<int(float *)> &processor) {
     return _impl->view_serialize(processor);
 }
+
+glm::mat4 vision_manager::racket2table() {
+    return _impl->racket2table();
+}

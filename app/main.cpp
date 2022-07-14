@@ -14,8 +14,8 @@ using namespace libtennis;
 using namespace librendering;
 using namespace libvision;
 
-VirtualTennisNetworkClient* tennis_client = nullptr;
-static unsigned player_id = 0;
+VirtualTennisNetworkClient *g_tennis_client = nullptr;
+PlayerInfo *g_player_info = nullptr;
 
 int main(int, char **) {
 	vision_manager vision;
@@ -51,29 +51,37 @@ int main(int, char **) {
 
 	while (!rendering.quit_get()) {
 		// Initiating the connection with server
-		if (rendering.ready_to_register_get() && tennis_client == nullptr) {
-			tennis_client = new VirtualTennisNetworkClient(std::string(rendering.input_ip_get()), rendering.input_port_get(),
+		if (rendering.ready_to_register_get() && g_tennis_client == nullptr) {
+			g_tennis_client = new VirtualTennisNetworkClient(std::string(rendering.input_ip_get()), rendering.input_port_get(),
 														std::string(rendering.input_player_name_get()));
 			rendering.player1_deserialize()(rendering.input_player_name_get());
-			ClientConnectionResponse connection_res = tennis_client->connectServer();
-			std::cout << connection_res.get_detail() << std::endl;
 		}
 
-		if (tennis_client && !tennis_client->is_connected()) {
-			ClientConnectionResponse connection_res = tennis_client->connectServer();
+		if (g_tennis_client && !g_tennis_client->is_connected()) {
+			ClientConnectionResponse connection_res = g_tennis_client->connectServer();
 			std::cout << connection_res.get_detail() << std::endl;
+			if (connection_res.get_result()) {
+				g_player_info = new PlayerInfo(connection_res.get_player_info());
+			}
 		}
 
 		if (!rendering.paused_get()) {
             // TODO: receive from server
             // get enemy's racket status
             // get ball status
-			RacketStatus(,Transform(vision.racket2table()),);
+			// RacketStatus(,Transform(vision.racket2table()),);
             rendering.frametime_serialize(tennis.frametime_deserialize());
 
 			if (vision.run_tick()) {
 				cerr << "Failed to run tick vision.\n";
 				break;
+			}
+
+			if (g_tennis_client) {
+				RacketStatus rs(g_player_info->get_player_id(),
+												  Transform(vision.racket2table()), Velocity());
+				bool res = g_tennis_client->onVisionTickEnd(rs);
+				if (!res) cerr << "Error sending racket status error.\n";
 			}
             // vision serialize racket and table transformation for tennis and rendering
             vision.capture_serialize(rendering.capture_deserialize());
@@ -115,6 +123,9 @@ int main(int, char **) {
 		cerr << "Failed to term vision.\n";
 		return 1;
 	}
+
+	if (g_tennis_client != nullptr) delete g_tennis_client;
+	if (g_player_info != nullptr) delete g_player_info;
 
 	return 0;
 }

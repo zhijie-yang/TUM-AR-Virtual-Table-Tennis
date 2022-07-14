@@ -31,6 +31,7 @@ namespace libvision {
 		int init(const vision_settings& settings);
 		int run_tick();
 		int term();
+		glm::mat4 racket2table();
 	};
 }
 
