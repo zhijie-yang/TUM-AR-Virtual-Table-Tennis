@@ -1,7 +1,7 @@
 #ifndef LIBVISION_MANAGER
 #define LIBVISION_MANAGER
 
-#include "libvision/vision_settings.hpp"
+#include "vision_settings.hpp"
 
 #include <memory>
 #include <functional>
@@ -31,4 +31,6 @@ namespace libvision {
 	};
 }
 
-#endif // !LIBRENDERING_MANAGER
+#endif // !LIBVISION_MANAGER
+
+#pragma once
