@@ -549,14 +549,9 @@ public:
         return processor(arr_model);
     }
     
-    int racket2table_serialize(const std::function<int(float*)>& processor)
+    glm::mat4 racket2table()
     {
-        float arr_model[16] = {
-                _racket2table[0][0], _racket2table[0][1], _racket2table[0][2], _racket2table[0][3],
-                _racket2table[1][0], _racket2table[1][1], _racket2table[1][2], _racket2table[1][3],
-                _racket2table[2][0], _racket2table[2][1], _racket2table[2][2], _racket2table[2][3],
-                _racket2table[3][0], _racket2table[3][1], _racket2table[3][2], _racket2table[3][3]};
-        return processor(arr_model);
+        return _racket2table;
     }
 };
 

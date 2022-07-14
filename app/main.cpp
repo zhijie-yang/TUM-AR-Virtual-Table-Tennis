@@ -68,6 +68,7 @@ int main(int, char **) {
             // TODO: receive from server
             // get enemy's racket status
             // get ball status
+			RacketStatus(,Transform(vision.racket2table()),);
             rendering.frametime_serialize(tennis.frametime_deserialize());
 
 			if (vision.run_tick()) {
