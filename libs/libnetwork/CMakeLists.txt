@@ -45,20 +45,10 @@ add_custom_command(
         DEPENDS ${PROTO_FILE} ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
 )
 
-# add_library(framework INTERFACE)
-
-# target_include_directories(
-#     FRAMEWORK
-#     INTERFACE $<BUILD_INTERFACE:${FRAMEWORK_INCLUDE_DIR}>
-#               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-# )
-
 target_include_directories(
         framework
         INTERFACE ${FRAMEWORK_INCLUDE_DIR}
 )
-
-
 
 include_directories(${PROTO_SRC_DIR})
 include_directories(${PROTOBUF_INCLUDE_DIRS})
@@ -80,7 +70,41 @@ set(LIBS
 # Add libframework headers to include path
 include_directories(${LIBS})
 
-# add_library(libs::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(lib_${PROJECT_NAME}_client
+    src/lib${PROJECT_NAME}/client.cpp
+)
+
+target_link_libraries(lib_${PROJECT_NAME}_client
+    PUBLIC
+    glm
+    ${PROTOBUF}
+    ${GRPC}
+    ${GRPC++}
+    ${GRPC++_REFLECTION}
+    ${PROJECT_NAME}_grpc_handler
+    ${PROJECT_NAME}_protobuf
+)
+
+add_library(lib_${PROJECT_NAME}_server
+    src/lib${PROJECT_NAME}/client.cpp
+    ${PROTO_SRC_DIR}/network.pb.h
+    ${PROTO_SRC_DIR}/network.pb.cc
+)
+
+target_link_libraries(lib_${PROJECT_NAME}_server
+    PUBLIC
+    glm
+    ${PROTOBUF}
+    ${GRPC}
+    ${GRPC++}
+    ${GRPC++_REFLECTION}
+    ${PROJECT_NAME}_grpc_handler
+    ${PROJECT_NAME}_protobuf
+)
+
+
+add_library(libs::${PROJECT_NAME}_client ALIAS lib_${PROJECT_NAME}_client)
+add_library(libs::${PROJECT_NAME}_server ALIAS lib_${PROJECT_NAME}_server)
 
 # target_link_libraries(${PROJECT_NAME}
 # 	PUBLIC
@@ -108,19 +132,20 @@ include_directories(${LIBS})
 
 
 add_executable(${PROJECT_NAME}_client
-        src/lib${PROJECT_NAME}/client.cpp
-        )
+    tests/test_client.cpp
+)
 
 target_link_libraries(${PROJECT_NAME}_client
-        PUBLIC
-        glm
-        ${PROTOBUF}
-        ${GRPC}
-        ${GRPC++}
-        ${GRPC++_REFLECTION}
-        ${PROJECT_NAME}_grpc_handler
-        ${PROJECT_NAME}_protobuf
-        )
+    PUBLIC
+    glm
+    ${PROTOBUF}
+    ${GRPC}
+    ${GRPC++}
+    ${GRPC++_REFLECTION}
+    ${PROJECT_NAME}_grpc_handler
+    ${PROJECT_NAME}_protobuf
+    lib_${PROJECT_NAME}_client
+)
 
 add_executable(${PROJECT_NAME}_server
         src/lib${PROJECT_NAME}/server.cpp

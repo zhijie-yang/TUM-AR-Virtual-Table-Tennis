@@ -11,19 +11,21 @@
 #include "libnetwork/proto_src/network.grpc.pb.h"
 
 
-GeneralResponse VirtualTennisNetworkClient::connectServer(ClientConnectionRequest& _request) {
+ClientConnectionResponse VirtualTennisNetworkClient::connectServer() {
     grpc::ClientContext context;
     // serialize
     libnetwork::ClientConnectionRequest request;
-    _request.toProto(request);
+    request.set_player_name(this->player_name);    
     // handling the request and reponse
-    libnetwork::GeneralResponse response;
+    libnetwork::ClientConnectionResponse response;
     grpc::Status status = stub_->ConnectServer(&context, request, &response);
     // deserialize
     // auto _response = new GeneralResponse();
-    GeneralResponse _response;
+    ClientConnectionResponse _response;
     if (status.ok()) {
-        GeneralResponse::fromProto(response, _response);
+        ClientConnectionResponse::fromProto(response, _response);
+        this->player_id = _response.get_player_info().get_player_id();
+        this->connected = true;
     } else {
         std::cout << status.error_message() << std::endl;
     }
@@ -89,9 +91,10 @@ GeneralResponse VirtualTennisNetworkClient::sendRacketStatus(RacketStatus& _requ
     return _response;
 }
 
-RacketStatus VirtualTennisNetworkClient::getRacketStatus() {
+RacketStatus VirtualTennisNetworkClient::getRacketStatus(unsigned const& player_id) {
     grpc::ClientContext context;
     libnetwork::RacketStatusRequest request;
+    request.set_player_id(player_id);
     libnetwork::RacketStatus response;
     grpc::Status status = stub_->GetRacketStatus(&context, request, &response);
     RacketStatus _response;
@@ -132,11 +135,10 @@ ScoreBoard VirtualTennisNetworkClient::getScoreBoard() {
     return _response;
 }
 
-GeneralResponse VirtualTennisNetworkClient::changeTurn(ChangeTurnRequest& _request) {
+GeneralResponse VirtualTennisNetworkClient::changeTurn() {
     grpc::ClientContext context;
     libnetwork::ChangeTurnRequest request;
     libnetwork::GeneralResponse response;
-    _request.toProto(request);
     grpc::Status status = stub_->ChangeTurn(&context, request, &response);
     GeneralResponse _response;
     if (status.ok()) {
@@ -191,54 +193,44 @@ RoundEndingResponse VirtualTennisNetworkClient::endRound(RoundEndingRequest& _re
     return _response;
 }
 
-
-int main(int argc, char** argv) {
-    // Instantiate the client. It requires a channel, out of which the actual RPCs
-    // are created. This channel models a connection to an endpoint specified by
-    // the argument "--target=" which is the only expected argument.
-    // We indicate that the channel isn't authenticated (use of
-    // InsecureChannelCredentials()).
-    std::string target_str;
-    std::string arg_str("--ip");
-    // std::string arg2_str("--port");
-    if (argc > 1) {
-        std::string arg_val = argv[1];
-        size_t start_pos = arg_val.find(arg_str);
-        if (start_pos != std::string::npos) {
-            start_pos += arg_str.size();
-            if (arg_val[start_pos] == '=') {
-                target_str = arg_val.substr(start_pos + 1);
-            } else {
-                std::cout << "The only correct argument syntax is --ip="
-                      << std::endl;
-                return 0;
-            }
-        } else {
-            std::cout << "The only acceptable argument is --target=" << std::endl;
-            return 0;
-        }
+std::string VirtualTennisNetworkClient::getOpponentName() {
+    grpc::ClientContext context;
+    // serialize
+    libnetwork::PlayerInfo request;
+    request.set_player_id(this->player_id);
+    // handling the request and reponse
+    libnetwork::PlayerInfo response;
+    grpc::Status status = stub_->GetOpponentName(&context, request, &response);
+    // deserialize
+    if (status.ok()) {
+        return response.player_name();
     } else {
-      target_str = "localhost:50051";
+        std::cout << status.error_message() << std::endl;
+        return std::string("_undefined");
     }
-    VirtualTennisNetworkClient tennis_client(
-    grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-    auto player_info1 = PlayerInfo(1, "Zhijie Yang");
-    auto player_info2 = PlayerInfo(2, "Yifeng Li");
-    auto player_info3 = PlayerInfo(3, "Siyun Liang");
-    auto connection_req1 = ClientConnectionRequest(target_str, player_info1, 50051);
-    auto connection_req2 = ClientConnectionRequest(target_str, player_info2, 50051);
-    auto connection_req3 = ClientConnectionRequest(target_str, player_info2, 50051);
-    GeneralResponse connection_res = tennis_client.connectServer(connection_req1);
-    std::cout << connection_res.get_detail() << std::endl;
-    connection_res = tennis_client.connectServer(connection_req2);
-    std::cout << connection_res.get_detail() << std::endl;
-    connection_res = tennis_client.connectServer(connection_req3);
-    std::cout << connection_res.get_detail() << std::endl;
-    connection_res = tennis_client.disconnectServer();
-    std::cout << connection_res.get_detail() << std::endl;
-    connection_res = tennis_client.disconnectServer();
-    std::cout << connection_res.get_detail() << std::endl;
-    connection_res = tennis_client.disconnectServer();
-    std::cout << connection_res.get_detail() << std::endl;
-    return 0;
 }
+
+bool VirtualTennisNetworkClient::onVisionTickEnd(RacketStatus& r) {
+    auto status = sendRacketStatus(r);
+    return status.get_result();
+}
+
+bool VirtualTennisNetworkClient::onTennisTickEnd(BallStatus& ball_status,
+                ScoreBoard& score_board, bool& change_turn) {
+                    bool status = true;
+                    status &= sendBallStatus(ball_status).get_result();
+                    status &= sendScoreBoard(score_board).get_result();
+                    if (change_turn) {
+                        status &= changeTurn().get_result();
+                    }
+                    return status;
+}
+
+void VirtualTennisNetworkClient::RenderingTickBegin(unsigned const& player_id,
+                RacketStatus& racket_status, BallStatus& ball_status,
+                ScoreBoard& score_board, unsigned& turn_owner) {
+                    racket_status = getRacketStatus(player_id);
+                    ball_status = getBallStatus();
+                    score_board = getScoreBoard();
+                    turn_owner = getCurrentTurn();
+                }

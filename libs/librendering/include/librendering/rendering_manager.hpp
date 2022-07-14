@@ -63,6 +63,11 @@ namespace librendering {
 		* Get a function which deserializes a captured video frame.
 		* Accepts frame buffer, width, height, channels.
 		*/
+		char* input_ip_get() const;
+		int input_port_get() const;
+		bool ready_to_register_get() const;
+		char* input_player_name_get() const;
+
 		std::function<int(void*, int, int, int)> capture_deserialize();
 
 		/**

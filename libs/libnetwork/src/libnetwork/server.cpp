@@ -1,3 +1,4 @@
+#include "libnetwork/include/server.h"
 #include <grpc++/grpc++.h>
 #include <grpc++/ext/proto_server_reflection_plugin.h>
 #include <grpc++/health_check_service_interface.h>
@@ -14,68 +15,6 @@
 using grpc::Server;
 using grpc::ServerBuilder;
 
-class TennisServerManager {
-public:
-    ~TennisServerManager();
-
-private:
-    static TennisServerManager* instance;
-    TennisServerManager(){}
-
-    std::pair<bool, bool> client_inited = {false, false};
-    std::pair<std::string, std::string> client_ip;
-    // std::pair<unsigned, unsigned> client_port;
-    std::pair<unsigned, unsigned> client_id;
-    std::pair<std::string, std::string> client_name;
-
-    // game logics
-    bool turn_owner = false; // 0/false for player A, 1/true for player B
-    BallStatus ball_status;
-    RacketStatus racket_status;
-    ScoreBoard score_board;
-    bool game_running = false;
-
-public:
-    inline static TennisServerManager* get_instance();
-
-    // getters
-    inline std::pair<std::string, std::string> get_client_ip() {return this->client_ip;}
-    // inline std::pair<unsigned, unsigned> getClientPort() {return this->client_port;}
-    inline std::pair<unsigned, unsigned> get_client_id() {return this->client_id;}
-    inline std::pair<std::string, std::string> get_client_name() {return this->client_name;}
-    inline unsigned get_turn_owner() {
-        return (!this->turn_owner) ? this->client_id.first : this->client_id.second;
-        }
-    inline BallStatus get_ball_status() {return this->ball_status;}
-    inline RacketStatus get_racket_status() {return this->racket_status;}
-    inline ScoreBoard get_score_board() {return this->score_board;}
-    inline std::pair<bool, bool> get_client_inited() {return this->client_inited;}
-
-    // setters
-    inline void set_ball_status(BallStatus const& ball_status) {
-        this->ball_status = ball_status;
-    }
-    inline void set_racket_status(RacketStatus const &racket_status) {
-        this->racket_status = racket_status;
-    }
-    inline void set_score_board(ScoreBoard const &score_board) {
-        this->score_board = score_board;
-    }
-
-    // game locigs
-    bool start_game() {
-        if (this->game_running || !this->client_inited.first || !this->client_inited.second) {return false;}
-        this->game_running = true;
-        return true;
-    }
-    bool reg_player(std::string client_ip, unsigned client_port,
-              unsigned client_player_id, std::string client_player_name);
-    // getters
-    inline void change_turn() {this->turn_owner = !this->turn_owner;}
-    inline void dereg(bool pos) {if (!pos) this->client_inited.first = false; else this->client_inited.second = false;}
-    inline void dereg() {this->client_inited = {false, false};}
-};
-
 /* Null, because instance will be initialized on demand. */
 TennisServerManager* TennisServerManager::instance = 0;
 
@@ -89,25 +28,28 @@ TennisServerManager* TennisServerManager::get_instance()
     return instance;
 }
 
-bool TennisServerManager::reg_player(std::string client_ip, unsigned client_port,
-              unsigned client_player_id, std::string client_player_name) {
+unsigned TennisServerManager::reg_player(std::string client_ip, unsigned client_port,
+                std::string client_player_name) {
                 if (!client_inited.first && !client_inited.second) {
                     this->client_ip.first = client_ip;
                     // this->client_port.first = client_port;
-                    this->client_id.first = client_player_id;
+                    this->client_id.first = this->next_player_id;
+                    this->next_player_id++;
                     this->client_name.first = client_player_name;
                     client_inited.first = true;
+                    return this->client_id.first;
                 } else if (client_inited.first && !client_inited.second) {
                     this->client_ip.second = client_ip;
                     // this->client_port.second = client_port;
-                    this->client_id.second = client_player_id;
+                    this->client_id.second = this->next_player_id;
+                    this->next_player_id++;
                     this->client_name.second = client_player_name;
                     client_inited.second = true;
+                    return this->client_id.second;
                 } else {
                     std::cerr << "Can not register more than two clients!" << std::endl;
-                    return false;
+                    return 0;
                 }
-                return true;
               }
 
 class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
@@ -135,7 +77,8 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                     auto manager = TennisServerManager::get_instance();
                     RacketStatus status;
                     RacketStatus::fromProto(*request, status);
-                    manager->set_racket_status(status);
+                    int pos = manager->get_player_pos(request->player_id());
+                    manager->set_racket_status(status, pos);
                     response->set_result(true);
                     return grpc::Status::OK;
                 }
@@ -144,7 +87,8 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                 libnetwork::RacketStatus* response) override {
                     auto manager = TennisServerManager::get_instance();
                     libnetwork::RacketStatus _response;
-                    manager->get_racket_status().toProto(_response);
+                    int pos = manager->get_player_pos(request->player_id());
+                    manager->get_racket_status(pos).toProto(_response);
                     *response = _response;
                     return grpc::Status::OK;
                 }
@@ -202,7 +146,7 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                 }
 
     grpc::Status ConnectServer(grpc::ServerContext* context, const libnetwork::ClientConnectionRequest* request,
-                libnetwork::GeneralResponse* response) override {
+                libnetwork::ClientConnectionResponse* response) override {
                     std::string peer_info = context->peer();
                     std::cout << "User connection with peer info: " << peer_info << std::endl;
                     auto manager = TennisServerManager::get_instance();
@@ -223,14 +167,15 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                     // std::string ip_addr = peer_info.substr(0, pos);
                     std::cout << "IP: " << ip_addr << std::endl;
                     std::cout << "Port: " << port_str << std::endl;
-                    auto success = manager->reg_player(ip_addr, 0, request->player_info().player_id(), request->player_info().player_name());
-                    std::cout << "Player Name: " << request->player_info().player_name() << std::endl;
-                    response->set_result(success);
-                    if (success) {
+                    auto new_id = manager->reg_player(ip_addr, 0, request->player_name());
+                    std::cout << "Player Name: " << request->player_name() << std::endl;
+                    response->set_result(new_id);
+                    if (new_id) {
                         std::stringstream fmt_str;
-                        fmt_str<< "Player " << request->player_info().player_name() << "regiester with player ID "
-                                            << request->player_info().player_id();
+                        fmt_str<< "Player " << request->player_name() << " regiester with player ID " << new_id;
                         response->set_detail(fmt_str.str());
+                        PlayerInfo p(new_id, request->player_name());
+                        response->set_allocated_player_info(p.toProtoAllocated());
                         return grpc::Status::OK;
                     } else {
                         std::stringstream fmt_str;
@@ -268,6 +213,17 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                         return grpc::Status(grpc::StatusCode::CANCELLED, "Player not registered.");
                     }
                     // TODO @zhijie-yang: get client ip address and port from context
+                    return grpc::Status::OK;
+                }
+
+    grpc::Status GetOpponentName(grpc::ServerContext* context, const libnetwork::PlayerInfo* request,
+                libnetwork::PlayerInfo* response) override {
+                    auto manager = TennisServerManager::get_instance();
+                    auto player_names = manager->get_client_name();
+                    int pos = manager->get_player_pos(request->player_id());
+                    // !pos for the id of the other party
+                    auto name = get_pair_elm(player_names, !pos);
+                    response->set_player_name(name);
                     return grpc::Status::OK;
                 }
 };

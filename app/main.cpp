@@ -1,12 +1,21 @@
 #include <iostream>
+#include <sstream>
 #include <librendering/rendering_manager.hpp>
 #include <libvision/vision_manager.hpp>
 #include "libtennis/tennis_manager.h"
+#include "libframework/include/ball_status.h"
+#include "libframework/include/racket_status.h"
+#include "libframework/include/infos.h"
+#include "libnetwork/include/client.h"
+
 
 using namespace std;
 using namespace libtennis;
 using namespace librendering;
 using namespace libvision;
+
+VirtualTennisNetworkClient* tennis_client = nullptr;
+static unsigned player_id = 0;
 
 int main(int, char **) {
 	vision_manager vision;
@@ -41,6 +50,20 @@ int main(int, char **) {
     vision.proj_serialize(rendering.proj_deserialize());
 
 	while (!rendering.quit_get()) {
+		// Initiating the connection with server
+		if (rendering.ready_to_register_get() && tennis_client == nullptr) {
+			tennis_client = new VirtualTennisNetworkClient(std::string(rendering.input_ip_get()), rendering.input_port_get(),
+														std::string(rendering.input_player_name_get()));
+			rendering.player1_deserialize()(rendering.input_player_name_get());
+			ClientConnectionResponse connection_res = tennis_client->connectServer();
+			std::cout << connection_res.get_detail() << std::endl;
+		}
+
+		if (tennis_client && !tennis_client->is_connected()) {
+			ClientConnectionResponse connection_res = tennis_client->connectServer();
+			std::cout << connection_res.get_detail() << std::endl;
+		}
+
 		if (!rendering.paused_get()) {
             // TODO: receive from server
             // get enemy's racket status
