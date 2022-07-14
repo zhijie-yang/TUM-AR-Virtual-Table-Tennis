@@ -229,7 +229,8 @@ public:
                 }
             }
         }
-
+        // TODO @Siyun-Liang return (or serialize) BallStatus, ScoreBoard and a bool indicating
+        // change turn to the main function.
         return 0;
     }
 

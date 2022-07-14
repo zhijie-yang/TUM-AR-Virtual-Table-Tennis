@@ -16,8 +16,9 @@ service VirtualTennis {
     rpc StartNewRound (StartNewRoundRequest) returns (StartNewRoundResponse) {}
     rpc EndRound (RoundEndingRequest) returns (RoundEndingResponse) {}
     rpc Broadcast (ServerBroadcast) returns (google.protobuf.Empty) {}
-    rpc ConnectServer (ClientConnectionRequest) returns (GeneralResponse) {}
+    rpc ConnectServer (ClientConnectionRequest) returns (ClientConnectionResponse) {}
     rpc DisconnectServer (ClientDisconnectRequest) returns (GeneralResponse) {}
+    rpc GetOpponentName (PlayerInfo) returns (PlayerInfo) {}
 }
 
 message PlayerInfo {
@@ -76,7 +77,6 @@ message RacketStatus {
 }
 
 message ChangeTurnRequest {
-    uint32 new_id = 1;
 }
 
 message StartNewRoundRequest {
@@ -107,9 +107,7 @@ message ServerBroadcast {
 }
 
 message ClientConnectionRequest {
-    string server_ip_address = 1;
-    PlayerInfo player_info = 2;
-    uint32 port_number = 3;
+    string player_name = 1;
 }
 
 message ClientConnectionResponse {
@@ -122,6 +120,7 @@ message BallStatusRequest {
 }
 
 message RacketStatusRequest {
+    uint32 player_id = 1;
 }
 
 message ScoreBoardRequest {

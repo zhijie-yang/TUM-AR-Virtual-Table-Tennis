@@ -272,7 +272,7 @@ private:
         cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
         if (_markerIds.size() == 0)
         {
-            std::cerr << "Failed to detect markers"<< std::endl;
+            // std::cerr << "Failed to detect markers"<< std::endl;
             return -1;
         }
 
@@ -284,7 +284,7 @@ private:
         int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec);
         if (valid == 0)
         {
-            std::cerr << "Estimation failed"<< std::endl;
+            // std::cerr << "Estimation failed"<< std::endl;
             return -1;
         }
         _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE *2;
@@ -460,6 +460,7 @@ public:
         }
         _detect_markers();
         _estimate_position();
+        // TODO @hdghdAFS return (or serialize) RacketStatus to the main function
         return 0;
     }
 

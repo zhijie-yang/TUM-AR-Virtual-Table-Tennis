@@ -105,6 +105,9 @@ private:
     bool _gameEnd = false; /**< Should the game end */
     glm::vec3 table_translate; /**< Table translation offset */
 
+
+	char _input_player_name[256] = "Alice";
+	bool _ready_to_register = false;
 public:
     // camera
     Camera camera; /**< Current free flying camera */
@@ -355,6 +358,22 @@ public:
 
     int game_status_serialize(const std::function<int(bool)>& processor) {
         return processor(_gameEnd);
+    }
+
+    char* input_ip_get() const {
+        return (char*) _ipAddress;
+    }
+
+    int input_port_get() const {
+        return _port;
+    }
+
+    bool ready_to_register_get() const {
+        return _ready_to_register;
+    }
+
+    char* input_player_name_get() const {
+        return (char*) _input_player_name;
     }
 
 #pragma region Properties
@@ -697,6 +716,7 @@ public:
 
                         if (ImGui::InputText("IP Address", _ipAddress, 256)) {}
                         if (ImGui::InputInt("Port", &_port)) {}
+                        if (ImGui::InputText("Name", _input_player_name, 256)) {}
 
                         if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
                             scene_set(rendering_manager::scene::level);
@@ -708,6 +728,7 @@ public:
                         if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
                             scene_set(rendering_manager::scene::level);
                             // TODO: call client.connectServer
+                            _ready_to_register = true;
                         }
                         if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
                             scene_set(rendering_manager::scene::main_menu);
@@ -1034,4 +1055,20 @@ int rendering_manager::frametime_serialize(const std::function<int(float)>& proc
 
 int rendering_manager::game_status_serialize(const std::function<int(bool)>& processor) {
     return _impl->game_status_serialize(processor);
+}
+
+char* rendering_manager::input_ip_get() const {
+    return _impl->input_ip_get();
+}
+
+int rendering_manager::input_port_get() const {
+    return _impl->input_port_get();
+}
+
+bool rendering_manager::ready_to_register_get() const {
+    return _impl->ready_to_register_get();
+}
+
+char* rendering_manager::input_player_name_get() const {
+    return _impl->input_player_name_get();
 }

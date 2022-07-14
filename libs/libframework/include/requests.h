@@ -5,37 +5,6 @@
 #include "infos.h"
 #include "libnetwork/proto_src/network.pb.h"
 
-class ChangeTurnRequest {
-public:
-    ChangeTurnRequest(){}
-    ChangeTurnRequest(unsigned const& new_id) {
-        this->new_id = new_id;
-    }
-    ~ChangeTurnRequest(){}
-
-private:
-    unsigned new_id;
-
-public:
-    inline unsigned get_new_id() {
-        return this->new_id;
-    }
-
-    inline void toProto(libnetwork::ChangeTurnRequest& r) {
-        r.set_new_id(this->new_id);
-    }
-
-    inline libnetwork::ChangeTurnRequest* toProtoAllocated() {
-        auto r = new libnetwork::ChangeTurnRequest();
-        r->set_new_id(this->new_id);
-        return r;
-    }
-
-    inline static void fromProto(const libnetwork::ChangeTurnRequest &r, ChangeTurnRequest &out) {
-        out.new_id = r.new_id();
-    }
-};
-
 class StartNewRoundRequest {
 public:
     StartNewRoundRequest(){}
@@ -103,50 +72,31 @@ public:
 class ClientConnectionRequest {
 public:
     ClientConnectionRequest(){}
-    ClientConnectionRequest(std::string const& server_ip,
-                            PlayerInfo const& player_info, unsigned const& port_number) {
-        this->server_ip_address = server_ip;
-        this->player_info = player_info;
-        this->port_number = port_number;
+    ClientConnectionRequest(std::string const& player_name) {
+        this->player_name = player_name;
     }
     ~ClientConnectionRequest(){}
 
 private:
-    std::string server_ip_address;
-    PlayerInfo player_info;
-    unsigned port_number;
+    std::string player_name;
 
 public:
-    inline std::string get_server_ip() {
-        return this->server_ip_address;
-    }
-
-    inline PlayerInfo get_player_info() {
-        return this->player_info;
-    }
-
-    inline unsigned get_port_number() {
-        return this->port_number;
+    inline std::string get_player_name() {
+        return this->player_name;
     }
 
     inline void toProto(libnetwork::ClientConnectionRequest& r) {
-        r.set_server_ip_address(this->server_ip_address);
-        r.set_allocated_player_info(this->player_info.toProtoAllocated());
-        r.set_port_number(this->port_number);
+        r.set_player_name(this->player_name);
     }
 
     inline libnetwork::ClientConnectionRequest* toProtoAllocated() {
         auto r = new libnetwork::ClientConnectionRequest();
-        r->set_server_ip_address(this->server_ip_address);
-        r->set_allocated_player_info(this->player_info.toProtoAllocated());
-        r->set_port_number(this->port_number);
+        r->set_player_name(this->player_name);
         return r;
     }
 
     inline static void fromProto(const libnetwork::ClientConnectionRequest &r, ClientConnectionRequest &out) {
-        out.server_ip_address = r.server_ip_address();
-        PlayerInfo::fromProto(r.player_info(), out.player_info);
-        out.port_number = r.port_number();
+        out.player_name = r.player_name();
     }
 
 };
