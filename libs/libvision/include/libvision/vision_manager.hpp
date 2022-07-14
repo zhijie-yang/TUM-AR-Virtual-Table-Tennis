@@ -25,6 +25,9 @@ namespace libvision {
         int racket2_serialize(const std::function<int(float*)>& processor);
         int table_serialize(const std::function<int(float*)>& processor);
 
+        int view_serialize(const std::function<int(float*)>& processor);
+        int proj_serialize(const std::function<int(float*)>& processor);
+
 		int init(const vision_settings& settings);
 		int run_tick();
 		int term();

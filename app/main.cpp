@@ -24,7 +24,7 @@ int main(int, char **) {
 	rsettings.window_height = 600;
 	rsettings.frame_width = vision.capture_width_get();
 	rsettings.frame_height = vision.capture_height_get();
-	rsettings.free_cam_enabled = true;
+    rsettings.free_cam_enabled = false;
 
     // default maximum score is 11. For simplicity, assume each match contains only one game
     tennis_manager tennis(11);
@@ -38,6 +38,7 @@ int main(int, char **) {
 	rendering.scene_set(rendering_manager::scene::main_menu);
 	rendering.player1_deserialize()("John");
 	rendering.player2_deserialize()("Sam");
+    //vision.proj_serialize(rendering.proj_deserialize());
 
 	while (!rendering.quit_get()) {
 		if (!rendering.paused_get()) {
@@ -51,6 +52,7 @@ int main(int, char **) {
 				break;
 			}
             // vision serialize racket and table transformation for tennis and rendering
+            vision.view_serialize(rendering.view_deserialize());
 			vision.capture_serialize(rendering.capture_deserialize());
             vision.racket1_serialize(rendering.racket1_deserialize());
             vision.racket2_serialize(rendering.racket2_deserialize());

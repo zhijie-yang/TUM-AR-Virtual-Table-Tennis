@@ -164,6 +164,7 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+            _racket1Model[3][1] = _racket1Model[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
             return 0;
         };
     }
@@ -177,8 +178,7 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-            //_ballModel = _ballModel * glm::scale(glm::vec3(0.045, 0.045, 0.045));
-            //_ballModel = glm::scale(glm::vec3(0.045, 0.045, 0.045)) * _ballModel;
+            _ballModel[3][1] = _ballModel[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
             return 0;
         };
     }
@@ -187,35 +187,52 @@ public:
     {
         return [&](float* data) -> int
         {
+
             glm::vec3 table_scale = CONST_TABLE_SCALE;
             float net_height = table_scale.y;
             table_scale.y = table_scale.z;
             table_scale.z = net_height;
+
             _tableModel = glm::mat4(
                     glm::vec4(data[0], data[1], data[2], data[3]),
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-            _tableModel = _tableModel * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
-            _tableModel = _tableModel * glm::scale(table_scale) * glm::mat4(1.0f);
+            _tableModel[3][1] = _tableModel[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
+            _tableModel = _tableModel * glm::scale(table_scale);
             return 0;
         };
     }
 
-    std::function<int(const glm::mat4&)> view_deserialize()
+    std::function<int(float*)> view_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _view = value;
+            _view = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
+
+            _view = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+                             glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
+                             glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+                             glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) * _view;
+
             return 0;
         };
     }
 
-    std::function<int(const glm::mat4&)> proj_deserialize()
+    std::function<int(float*)> proj_deserialize()
     {
-        return [&](const glm::mat4& value) -> int
+        return [&](float* data) -> int
         {
-            _proj = value;
+            glm::mat4 intrinsics = glm::mat4(
+                    glm::vec4(data[0], data[1], data[2], data[3]),
+                    glm::vec4(data[4], data[5], data[6], data[7]),
+                    glm::vec4(data[8], data[9], data[10], data[11]),
+                    glm::vec4(data[12], data[13], data[14], data[15]));
+
             return 0;
         };
     }
@@ -333,16 +350,15 @@ public:
         _freeCamEnabled = settings.free_cam_enabled;
 
         _view = glm::mat4(1.0f);
-        _proj = glm::perspective(glm::radians(camera.Zoom), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
+        _proj = glm::perspective(glm::radians(45.0f), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
         _ballModel = glm::mat4(1.0f);
         _ballModel = glm::translate(_ballModel, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         _ballModel = glm::translate(_ballModel, glm::vec3(-0.25f, 0.1f, 0.6f)); // translate it down so it's at the center of the scene
         _ballModel = glm::scale(_ballModel, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         
         _tableModel = glm::mat4(1.f);
-        _tableModel = glm::rotate(_tableModel, glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
-        _tableModel *= glm::scale(glm::vec3(0.7625f, 1.37f, 0.07625f));
-
+        _tableModel = _tableModel * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
+        _tableModel = _tableModel * glm::scale(glm::vec3(1.525f, 0.1525f, 2.74f)) * glm::mat4(1.0f);
         // ---------------------------------------
         // GLFW Initialization
         // ---------------------------------------
@@ -579,10 +595,10 @@ public:
                 ImVec2 center = viewport->GetCenter();
                 ImVec2 brCorner = viewport->WorkSize;
 
-                if(_gameEnd) {
-                    scene_set(rendering_manager::scene::main_menu);
-                    _gameEnd = false;
-                }
+//                if(_gameEnd) {
+//                    scene_set(rendering_manager::scene::main_menu);
+//                    _gameEnd = false;
+//                }
 
                 switch (_scene) {
                     case rendering_manager::scene::main_menu:
@@ -877,12 +893,12 @@ int rendering_manager::term()
     return _impl->term();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::proj_deserialize()
+std::function<int(float*)> rendering_manager::proj_deserialize()
 {
     return _impl->proj_deserialize();
 }
 
-std::function<int(const glm::mat4&)> rendering_manager::view_deserialize()
+std::function<int(float*)>rendering_manager::view_deserialize()
 {
     return _impl->view_deserialize();
 }
