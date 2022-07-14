@@ -5,6 +5,8 @@
 
 #include <memory>
 #include <functional>
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 
 namespace libvision {
 	class vision_manager {
@@ -17,7 +19,14 @@ namespace libvision {
 
 		int capture_width_get() const;
 		int capture_height_get() const;
-		int capture_serialize(const std::function<int(void*, int)>& processor);
+
+		int capture_serialize(const std::function<int(void*, int, int, int)>& processor);
+        int racket1_serialize(const std::function<int(float*)>& processor);
+        int racket2_serialize(const std::function<int(float*)>& processor);
+        int table_serialize(const std::function<int(float*)>& processor);
+
+        int view_serialize(const std::function<int(float*)>& processor);
+        int proj_serialize(const std::function<int(float*)>& processor);
 
 		int init(const vision_settings& settings);
 		int run_tick();

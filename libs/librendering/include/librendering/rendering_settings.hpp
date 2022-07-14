@@ -4,11 +4,15 @@
 namespace librendering {
 	class rendering_settings {
 	public:
-		int frame_width;
-		int frame_height;
+		int frame_width = 640;
+		int frame_height = 480;
 
-		int window_width;
-		int window_height;
+		int window_width = 640;
+		int window_height = 480;
+
+		bool free_cam_enabled = true;
+
+		float popup_timeout = 5.f;
 	};
 }
 
