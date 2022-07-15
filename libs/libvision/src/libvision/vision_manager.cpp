@@ -172,8 +172,9 @@ private:
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
 
-
-                cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
+            if (key == 13) {
+                cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters,
+                                         rejectedCandidates);
                 cv::imshow("Webcam", _frame);
                 allCornersConcatenated.insert(
                         allCornersConcatenated.end(),
@@ -185,9 +186,9 @@ private:
                         std::make_move_iterator(markerIds.begin()),
                         std::make_move_iterator(markerIds.end())
                 );
-                markerCounterPerFrame.push_back((int)markerIds.size());
+                markerCounterPerFrame.push_back((int) markerIds.size());
                 count++;
-
+            }
             if (count == VIEW_POINTS)
             {
                 break;
@@ -358,20 +359,20 @@ private:
         cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
         bool f_racket = false;
         cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
-        std::cout << "board" <<endl;
-        std::cout << _print_board_rvec <<endl;
-        std::cout << _print_board_tvec <<endl;
+//        std::cout << "board" <<endl;
+//        std::cout << _print_board_rvec <<endl;
+//        std::cout << _print_board_tvec <<endl;
         for (size_t i = 0; i < _markerIds.size(); i++)
         {
-            rvecs[i] = _transPerspective(rvecs[i]);
-            std::cout << _markerIds[i] <<endl;
-            std::cout << rvecs[i] <<endl;
-            std::cout << tvecs[i] <<endl;
-            cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
-            cv::imshow("Webcam", _frame);
+
+//            std::cout << _markerIds[i] <<endl;
+//            std::cout << rvecs[i] <<endl;
+//            std::cout << tvecs[i] <<endl;
+//            cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
+//            cv::imshow("Webcam", _frame);
             if (_markerIds[i] == RACKET_MARKER_ID)
             {
-
+                rvecs[i] = _transPerspective(rvecs[i]);
                 srvec = rvecs[i];
                 stvec = tvecs[i];
                 f_racket = true;
@@ -390,13 +391,13 @@ private:
             _racket2cam = _fill_mat4(srvec, stvec);
 
 
-            glm::mat3 rotM = glm::mat3(glm::vec3(_racket2table[0]),
-            glm::vec3(_racket2table[1]),
-            glm::vec3(_racket2table[2]));
-            glm::vec3 translation = glm::vec3(_racket2table[3]);
-            glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
-            glm::vec3 transformedPos = rotM * marker_pos + translation;
-            std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
+//            glm::mat3 rotM = glm::mat3(glm::vec3(_racket2table[0]),
+//            glm::vec3(_racket2table[1]),
+//            glm::vec3(_racket2table[2]));
+//            glm::vec3 translation = glm::vec3(_racket2table[3]);
+//            glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
+//            glm::vec3 transformedPos = rotM * marker_pos + translation;
+//            std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
         }
 
         return 0;
