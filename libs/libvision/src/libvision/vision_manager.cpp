@@ -276,7 +276,7 @@ private:
         {
             if (_compare_vector(_board_rvec,_board_tvec,_Past_board_rvec,_Past_board_tvec)){
                 _print_board_rvec = _board_rvec;
-                _print_board_tvec = _print_board_tvec;
+                _print_board_tvec = _board_tvec;
             }
             _Past_board_tvec = _board_tvec;
             _Past_board_rvec = _board_rvec;
@@ -341,7 +341,7 @@ private:
 
         }
 
-        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _Past_board_rvec, _Past_board_tvec, MARKER_SIZE);
+        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _print_board_rvec, _print_board_tvec, MARKER_SIZE);
         //std::cout << _board_rvec << std::endl;
         //std::cout <<  std::endl;
         //waitKey(1500);
@@ -365,11 +365,11 @@ private:
             }
         }
 
-        _table2cam = _fill_mat4(_board_rvec,_board_tvec);
+        _table2cam = _fill_mat4(_print_board_rvec,_print_board_tvec);
 
         if (f_racket)
         {
-            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_board_rvec,_board_tvec);
+            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_print_board_rvec,_print_board_tvec);
             inv_rvec = std::get<0>(t);
             inv_tvec = std::get<1>(t);
             cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
