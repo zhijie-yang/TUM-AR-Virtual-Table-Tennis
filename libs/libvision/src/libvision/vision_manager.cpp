@@ -3,13 +3,18 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
 #include <tuple>
 #include <opencv2/calib3d.hpp>
 #include <glm/glm.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
+
 #include <opencv2/video/tracking.hpp>
 #include <cmath>
 #include <fstream>
+#include <iostream>
+
 
 using namespace libvision;
 using namespace cv;
@@ -18,7 +23,7 @@ using namespace std;
 #define RACKET_MARKER_ID 40
 #define MARKERS_NUM 3
 #define VIEW_POINTS 8
-#define MARKER_SIZE 0.025 // unit:meter
+#define MARKER_SIZE 0.07 // unit:meter
 #define MARKER_PIXEL 199
 #define STATES 12
 #define MEASURES 12
@@ -29,7 +34,7 @@ private:
     cv::VideoCapture _cap;
     cv::Mat _frame;
     cv::Mat _cameraMatrix, _distCoeffs;
-    glm::mat4 _racket2table,_table2cam,_racket2cam = glm::mat4(1.0f);
+    glm::mat4 _racket2table,_table2cam,_racket2cam;
     cv::Ptr<cv::aruco::Dictionary> _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::Ptr<cv::aruco::DetectorParameters> _parameters = cv::aruco::DetectorParameters::create();
     std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
@@ -37,6 +42,7 @@ private:
     cv::Ptr<cv::aruco::Board> _board;
     cv::Matx31d _board_rvec, _board_tvec;
     glm::mat4 _proj = glm::mat4(1.0f);
+
     cv::Matx31d _Past_board_rvec, _Past_board_tvec;
     cv::Matx31d _print_board_rvec, _print_board_tvec;
     cv::KalmanFilter _KalmanFilter;
@@ -112,17 +118,17 @@ private:
         glm::mat4 _result;
         cv::Matx33d rmat;
         cv::Rodrigues(rvec, rmat);
-        for (int i = 0; i < 3; i++)
+        for (size_t i = 0; i < 3; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (size_t j = 0; j < 3; j++)
             {
-                _result[i][j] = (float)rmat.val[i + j * 3];
+                _result[i][j] = rmat.val[i + j * 3];
             }
             _result[i][3] = 0.0f;
         }
-        for (int j = 0; j < 3; j++)
+        for (size_t j = 0; j < 3; j++)
         {
-            _result[3][j] = (float)tvec.val[j];
+            _result[3][j] = tvec.val[j];
         }
         _result[3][3] = 1.0f;
         return _result;
@@ -136,6 +142,7 @@ private:
         std::vector<std::vector<cv::Point3f>> objectPoints(3);
         markerImage = cv::imread("../data/marker.png");
         cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
+
         float middle_x;
         float middle_y;
 
@@ -146,7 +153,8 @@ private:
         {
             for (size_t j = 0; j < 4; j++)
             {
-                objectPoints[i].push_back(Point3f(markerCorners[i][j].x - middle_x , markerCorners[i][j].y - middle_y , 0.0));
+
+                objectPoints[i].push_back(Point3f(markerCorners[i][j].x - middle_x, markerCorners[i][j].y - middle_y, 0.0));
             }
         }
         _board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
@@ -179,6 +187,9 @@ private:
             _cap >> _frame;
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
+            if (key == 13)
+            {
+
 
             if (key == 13){
 
@@ -189,6 +200,8 @@ private:
                 {
                     return -1;
                 }
+
+
                 cv::imshow("Webcam", _frame);
                 allCornersConcatenated.insert(
                         allCornersConcatenated.end(),
@@ -200,7 +213,7 @@ private:
                         std::make_move_iterator(markerIds.begin()),
                         std::make_move_iterator(markerIds.end())
                 );
-                markerCounterPerFrame.push_back((int) markerIds.size());
+                markerCounterPerFrame.push_back((int)markerIds.size());
                 count++;
             }
             if (count == VIEW_POINTS)
@@ -213,7 +226,6 @@ private:
         // After capturing in several viewpoints, start calibration
         std::vector<cv::Mat> rvecs, tvecs;
         double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, _board, imgSize, _cameraMatrix, _distCoeffs, rvecs, tvecs);
-        _cameraMatrix =cv::getOptimalNewCameraMatrix(_cameraMatrix,_distCoeffs,imgSize,0.5);
         FileStorage fs("../data/camera_paras.yml", FileStorage::WRITE);
         fs << "cameraMatrix" << _cameraMatrix << "distCoeffs" << _distCoeffs;
         fs.release();
@@ -227,6 +239,7 @@ private:
         fs["cameraMatrix"] >> _cameraMatrix;
         fs["distCoeffs"] >> _distCoeffs;
         fs.release();
+
         glm::mat3 proj = glm::mat3(1.0f);
         for (size_t i = 0; i < 3; i++)
         {
@@ -239,6 +252,7 @@ private:
                           glm::vec4(proj[1], 0),
                           glm::vec4(proj[2], 0),
                           glm::vec4(0, 0, 0, 1));
+
         return 0;
     }
 
@@ -268,15 +282,13 @@ private:
 
     int _detect_markers()
     {
-        cv::Mat detect_frame;
-        undistort(_frame, detect_frame, _cameraMatrix, _distCoeffs);
-        cv::aruco::detectMarkers(detect_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
-        if (_markerIds.empty())
+        cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
+        if (_markerIds.size() == 0)
         {
             std::cerr << "Failed to detect markers"<< std::endl;
             return -1;
         }
-        _set_transition_matrix(_KalmanFilter,_dt);
+
         return 0;
     }
 
@@ -288,6 +300,7 @@ private:
             std::cerr << "Estimation failed"<< std::endl;
             return -1;
         }
+
         _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE *2;
         _board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE *2;
         _board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE *2;
@@ -368,22 +381,16 @@ private:
         //std::cout << _board_rvec << std::endl;
         //std::cout <<  std::endl;
         //waitKey(1500);
+
         std::vector<cv::Matx31d> rvecs, tvecs;
 
         cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
         bool f_racket = false;
         cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
-//        std::cout << "board" <<endl;
-//        std::cout << _print_board_rvec <<endl;
-//        std::cout << _print_board_tvec <<endl;
+
+
         for (size_t i = 0; i < _markerIds.size(); i++)
         {
-
-//            std::cout << _markerIds[i] <<endl;
-//            std::cout << rvecs[i] <<endl;
-//            std::cout << tvecs[i] <<endl;
-//            cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
-//            cv::imshow("Webcam", _frame);
             if (_markerIds[i] == RACKET_MARKER_ID)
             {
                 rvecs[i] = _transPerspective(rvecs[i]);
@@ -393,25 +400,24 @@ private:
             }
         }
 
-        _table2cam = _fill_mat4(_print_board_rvec,_print_board_tvec);
+        _table2cam = _fill_mat4(_board_rvec,_board_tvec);
 
         if (f_racket)
         {
-            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_print_board_rvec,_print_board_tvec);
+            tuple<cv::Matx31f, cv::Matx31f> t = _inversePerspective(_board_rvec,_board_tvec);
             inv_rvec = std::get<0>(t);
             inv_tvec = std::get<1>(t);
             cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
             _racket2table = _fill_mat4(t_rvec,t_tvec);
             _racket2cam = _fill_mat4(srvec, stvec);
 
-
-//            glm::mat3 rotM = glm::mat3(glm::vec3(_racket2table[0]),
-//            glm::vec3(_racket2table[1]),
-//            glm::vec3(_racket2table[2]));
-//            glm::vec3 translation = glm::vec3(_racket2table[3]);
-//            glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
-//            glm::vec3 transformedPos = rotM * marker_pos + translation;
-//            std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
+            //glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
+            //glm::vec3(_result[1]);
+            //glm::vec3(_result[2]));
+            //glm::vec3 translation = glm::vec3(_result[3]);
+            //glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
+            //glm::vec3 transformedPos = rotM * marker_pos + translation;
+            //std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
         }
 
         return 0;
@@ -448,25 +454,20 @@ public:
         }
         _create_board();
 
+
         int flag = _save_calibrate_paras();
         if (flag == -1)
         {
             std::cerr << "***Could not detect maekers***" << std::endl;
             return -1;
         }
+
         _read_calibrate_paras();
-
-
-        _initKalmanFilter(_KalmanFilter, STATES, MEASURES, 0);    // init function
-
-
         return 0;
     }
 
     int run_tick()
     {
-
-
         _cap >> _frame;
 
         if (_frame.empty())
@@ -485,7 +486,6 @@ public:
 
         return 0;
     }
-
 
     int racket1_serialize(const std::function<int(float*)>& processor)
     {
@@ -533,7 +533,7 @@ public:
 
     int table_serialize(const std::function<int(float*)>& processor)
     {
-        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 model = _table2cam;
         float arr_model[16] = {
                 model[0][0], model[0][1], model[0][2], model[0][3],
                 model[1][0], model[1][1], model[1][2], model[1][3],
@@ -551,7 +551,6 @@ public:
                 _proj[3][0], _proj[3][1], _proj[3][2], _proj[3][3]};
         return processor(arr_model);
     }
-
 };
 
 vision_manager::vision_manager()
@@ -589,7 +588,6 @@ int vision_manager::term()
 int vision_manager::capture_serialize(const std::function<int(void*, int, int, int)>& processor)
 {
     return _impl->capture_serialize(processor);
-
 }
 
 int vision_manager::racket1_serialize(const std::function<int(float *)> &processor) {
@@ -610,5 +608,4 @@ int vision_manager::proj_serialize(const std::function<int(float *)> &processor)
 
 int vision_manager::view_serialize(const std::function<int(float *)> &processor) {
     return _impl->view_serialize(processor);
-
 }

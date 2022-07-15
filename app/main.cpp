@@ -38,7 +38,7 @@ int main(int, char **) {
 	rendering.scene_set(rendering_manager::scene::main_menu);
 	rendering.player1_deserialize()("John");
 	rendering.player2_deserialize()("Sam");
-    //vision.proj_serialize(rendering.proj_deserialize());
+    vision.proj_serialize(rendering.proj_deserialize());
 
 	while (!rendering.quit_get()) {
 		if (!rendering.paused_get()) {
@@ -52,11 +52,12 @@ int main(int, char **) {
 				break;
 			}
             // vision serialize racket and table transformation for tennis and rendering
+            vision.capture_serialize(rendering.capture_deserialize());
             vision.view_serialize(rendering.view_deserialize());
-			vision.capture_serialize(rendering.capture_deserialize());
+            vision.table_serialize(rendering.table_deserialize());
             vision.racket1_serialize(rendering.racket1_deserialize());
             vision.racket2_serialize(rendering.racket2_deserialize());
-            vision.table_serialize(rendering.table_deserialize());
+
             vision.racket1_serialize(tennis.racket1_deserialize());
             vision.racket2_serialize(tennis.racket2_deserialize());
             vision.table_serialize(tennis.table_deserialize());
