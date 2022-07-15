@@ -43,74 +43,80 @@ void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow* window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height); /**< On window size change */
+void mouse_callback(GLFWwindow* window, double xpos, double ypos); /**< On mouse move */
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset); /**< On scrollwheel */
+void processInput(GLFWwindow* window); /**< On any keyboard or mouse input */
 
 static rendering_manager::impl* _instance;
 
+/**
+* Rendering manager implementation using PImpl paradigm.
+*/
 class rendering_manager::impl {
 private:
-    GLFWwindow* _window;
+    GLFWwindow* _window; /**< GLFW window currently in use */
 
-    GLuint _frameTextureId;
-    GLuint _frameVerticesId;
-    GLuint _frameVerticesBufferId;
-    GLuint _frameUVsBufferId;
-    std::unique_ptr<Shader> _frameShader;
+    GLuint _frameTextureId; /**< Allocated texture id of the video capture frame */
+    GLuint _frameVerticesId; /**< Allocated vertex array id of the fullscreen quad displaying video capture frame */
+    GLuint _frameVerticesBufferId; /**< Allocated vertex buffer id of the fullscreen quad displaying video capture frame */
+    GLuint _frameUVsBufferId; /**< Allocated uv buffer id of the fullscreen quad displaying video capture frame */
+    std::unique_ptr<Shader> _frameShader; /**< Shader used to render video capture frame */
 
-    glm::mat4 _racket1Model;
-    glm::mat4 _racket2Model;
-    glm::mat4 _ballModel;
-    glm::mat4 _tableModel;
-    glm::mat4 _view;
-    glm::mat4 _proj;
+    glm::mat4 _racket1Model; /**< Player 1 racket transformation matrix */
+    glm::mat4 _racket2Model; /**< Player 2 racket transformation matrix */
+    glm::mat4 _ballModel; /**< Ball transformation matrix */
+    glm::mat4 _tableModel; /**< Table scale/transformation matrix */
+    glm::mat4 _view; /**< Camera view matrix */
+    glm::mat4 _proj; /**< Camera projection matrix */
 
-    std::unique_ptr<Model> _ballObject;
-    std::unique_ptr<Model> _racketObject;
-    std::unique_ptr<Model> _tableObject;
+    std::unique_ptr<Model> _ballObject; /**< Ball 3d model */
+    std::unique_ptr<Model> _racketObject; /**< Racket 3d model */
+    std::unique_ptr<Model> _tableObject; /**< Table 3d model */
 
-    bool _freeCamEnabled;
-	bool _paused;
-	bool _quit;
-    rendering_settings _settings;
+    bool _freeCamEnabled; /**< Is free cam enabled */
+	bool _paused; /**< Is rendering paused */
+	bool _quit; /**< Should the app quit ASAP */
+    rendering_settings _settings; /**< Initialization settings */
 
-    int _match1, _match2;
-    int _score1, _score2;
+    int _match1; /**< Player 1 matches won */
+    int _match2; /**< Player 2 matches won */
+    int _score1; /**< Player 1 in-game score */
+    int _score2; /**< Player 2 in-game score */
 
-    float _deltaTime;
+    float _deltaTime; /**< Frame update time */
 
-    rxcpp::rxsub::subject<float> _update;
-    rxcpp::subscriber<float> _updateSub;
-    rxcpp::observable<float> _updateObs;
+    rxcpp::rxsub::subject<float> _update; /**< Update event, happens every frame */
+    rxcpp::subscriber<float> _updateSub; /**< Update event publisher */
+    rxcpp::observable<float> _updateObs; /**< Update event subscription source */
 
-    rxcpp::composite_subscription _uiDisp, _frameDisp, _modelDisp;
+    rxcpp::composite_subscription _uiDisp, _frameDisp, _modelDisp; // Event subscriptions
 
-    std::string _popupData;
-    float _popupDuration;
+    std::string _popupData; /**< Data to display in a popup */
+    float _popupDuration; /**< How much longer to display the popup */
 
-    char _ipAddress[256] = "127.0.0.1";
-    int _port = 5599;
-    std::string _player1Name, _player2Name;
+    char _ipAddress[256] = "127.0.0.1"; /**< Current ip address used in UI */
+    int _port = 5599; /**< Current port used in UI */
+    std::string _player1Name; /**< Player 1 name used in UI */
+    std::string _player2Name; /**< Player 2 name used in UI */
     
-    rendering_manager::scene _scene;
+    rendering_manager::scene _scene; /**< Current scene used in UI */
 
-    bool _gameEnd = false;
-    glm::vec3 table_translate;
+    bool _gameEnd = false; /**< Should the game end */
+    glm::vec3 table_translate; /**< Table translation offset */
 
 public:
     // camera
-    Camera camera;
-    float lastX;
-    float lastY;
-    bool firstMouse;
+    Camera camera; /**< Current free flying camera */
+    float lastX; /**< Last mouse position x */
+    float lastY; /**< Last mouse position y */
+    bool firstMouse; /**< Is it the first mouse plugged in */
 
     // timing
-    float deltaTime;
-    float lastFrame;
+    float deltaTime; /**< Time between frames in UI */
+    float lastFrame; /**< Last frame drawing time for UI */
 
-    std::unique_ptr<Shader> ourShader;
+    std::unique_ptr<Shader> ourShader; /**< 3d model universal shader */
 
 	impl() :
         _window{nullptr},
@@ -358,7 +364,9 @@ public:
 	int init(const rendering_settings& settings)
     {
         _settings = settings;
-
+        // ---------------------------------------
+        // Initial Parameters/Data Initialization
+        // ---------------------------------------
         //camera = Camera{ glm::vec3(0.0f, 0.0f, 3.0f) };
         camera = Camera{ glm::vec3(0.0f, 0.8f, 3.5f) };
         lastX = settings.window_width / 2.f;
@@ -377,10 +385,14 @@ public:
         // ---------------------------------------
         // GLFW Initialization
         // ---------------------------------------
+        
+        // Set error callback to get human-readable errors
         glfwSetErrorCallback(glfw_error_callback);
+        // Initialize GLFW
         if (!glfwInit())
             return 1;
 
+        // Used OpenGL version
         const char* glsl_version = "#version 330 core";
 
 #ifdef __APPLE__
@@ -389,15 +401,19 @@ public:
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-
+        
+        // Create desktop window
         _window = glfwCreateWindow(settings.window_width, settings.window_height, "Virtual Tennis", NULL, NULL);
         if (!_window) {
             return 1;
         }
+        // Make window the current context
         glfwMakeContextCurrent(_window);
+        // Subscribe to window resize
         glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
         //glfwSetCursorPosCallback(_window, mouse_callback);
         glfwSetScrollCallback(_window, scroll_callback);
+        // Disable the mouse cursor and snap it to window center
         //glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
@@ -409,14 +425,18 @@ public:
         // ---------------------------------------
         // GLAD Initialization
         // ---------------------------------------
+
+        // Load GLAD functions, extensions and modules
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
             std::cout << "Failed to initialize GLAD" << std::endl;
             return -1;
         }
 
+        // Flip images vertically on load
         stbi_set_flip_vertically_on_load(true);
 
+        // Use the depth buffer
         glEnable(GL_DEPTH_TEST);
 
         // ---------------------------------------
@@ -448,11 +468,13 @@ public:
 
     int init_model(const rendering_settings& settings)
     {
+        // Load shaders and 3d models
         ourShader = std::make_unique<Shader>("data/1.model_loading.vs", "data/1.model_loading.fs");
         _racketObject = std::make_unique<Model>("data/racket.fbx");
         _ballObject = std::make_unique<Model>("data/ball.fbx");
         _tableObject = std::make_unique<Model>("data/table.fbx");
 
+        // Update loop hook
         _modelDisp = _updateObs.subscribe([&](float delta)
             {
                 if (_scene != rendering_manager::scene::level) return;
@@ -473,7 +495,7 @@ public:
                 ourShader->setMat4("projection", _proj);
                 ourShader->setMat4("view", view);
 
-                // render the loaded model
+                // render the loaded models
                 ourShader->setMat4("model", _ballModel);
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
@@ -490,6 +512,7 @@ public:
 
     int init_frame(const rendering_settings& settings)
     {
+        // Generate fullscreen quad for capture frame display
         glGenVertexArrays(1, &_frameVerticesId);
         glBindVertexArray(_frameVerticesId);
         static const GLfloat g_vertex_buffer_data[] = {
@@ -510,15 +533,16 @@ public:
            1.0f, 0.0f, // tr
            0.0f, 0.0f, // tl
         };
+        // Generate buffers for the quad and fill in data
         glGenBuffers(1, &_frameVerticesBufferId);
         glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
         glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
         glGenBuffers(1, &_frameUVsBufferId);
         glBindBuffer(GL_ARRAY_BUFFER, _frameUVsBufferId);
         glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
-
+        // Load fullscreen quad shader
         _frameShader = std::make_unique<Shader>("data/fullscreen.vs", "data/fullscreen.fs");
-
+        // Generate a texture for the capture
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         glGenTextures(1, &_frameTextureId);
         glBindTexture(GL_TEXTURE_2D, _frameTextureId);
@@ -529,6 +553,7 @@ public:
         // Set texture clamping method
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        // Fill with empty data as a start
         auto* data = new char[settings.frame_width * settings.frame_height * 3];
         glTexImage2D(GL_TEXTURE_2D, // Type of texture
             0,                      // Pyramid level (for mip-mapping) - 0 is the top level
@@ -541,12 +566,14 @@ public:
             data);                  // The actual image data itself
         delete[] data;
 
+        // Frame rendering update loop hook
         _frameDisp = _updateObs.subscribe([&](float delta)
             {
                 if (_scene != rendering_manager::scene::level) return;
 
+                // Use fullscreen quad shader
                 _frameShader->use();
-
+                // Upload fullscreen quad data
                 glEnableVertexAttribArray(0);
                 glBindBuffer(GL_ARRAY_BUFFER, _frameVerticesBufferId);
                 glVertexAttribPointer(
@@ -567,11 +594,14 @@ public:
                     0,                  // stride
                     (void*)0            // array buffer offset
                 );
+                // Select fullscreen quad texture aka capture frame
                 glBindTexture(GL_TEXTURE_2D, _frameTextureId);
+                // Draw quad in 2 triangles with 3 vertices each
                 glDrawArrays(GL_TRIANGLES, 0, 6);
+                // Cleanup
                 glDisableVertexAttribArray(1);
                 glDisableVertexAttribArray(0);
-
+                // Clear depth, so quad will always be the background
                 glClear(GL_DEPTH_BUFFER_BIT);
             });
 
@@ -580,7 +610,9 @@ public:
 
     int init_ui(const char* glsl_version)
     {
+        // Verify if IMGUI is usable
         IMGUI_CHECKVERSION();
+        // Create context and set the OpenGL+GLFW toolchain
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
         ImGui_ImplGlfw_InitForOpenGL(_window, true);
@@ -590,8 +622,10 @@ public:
         std::cout << "\tESC - quit the program" << std::endl;
         std::cout << "\tp - pause video" << std::endl;
 
+        // Get IMGUI events
         ImGuiIO& io = ImGui::GetIO();
 
+        // UI handling and rendering update hook
         _uiDisp = _updateObs.subscribe([&](float delta)
             {
                 // Start the Dear ImGui frame
@@ -599,11 +633,13 @@ public:
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
 
+                // Calculate popup duration logic
                 _popupDuration -= delta;
                 if (_popupDuration < 0.f) {
                     _popupDuration = -1.f;
                 }
                 if (_popupDuration >= 0.f) {
+                    // Display popup
                     ImGui::SetNextWindowPos(ImVec2());
                     ImGui::Begin("Hey!");
 
@@ -612,6 +648,7 @@ public:
                     ImGui::End();
                 }
 
+                // Get desktop window size to use for UI anchoring
                 auto* viewport = ImGui::GetMainViewport();
                 ImVec2 center = viewport->GetCenter();
                 ImVec2 brCorner = viewport->WorkSize;
@@ -621,6 +658,7 @@ public:
 //                    _gameEnd = false;
 //                }
 
+                // Draw current UI scene
                 switch (_scene) {
                     case rendering_manager::scene::main_menu:
                     {
@@ -741,9 +779,9 @@ public:
                     break;
                 }
 
-                // Rendering
+                // Rendering into a buffer
                 ImGui::Render();
-
+                // Rendering onto the screen
                 ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             });
 
@@ -753,22 +791,30 @@ public:
 
 	int run_tick()
     {
+        // If user tried to close the window, terminate
         _quit = _quit || glfwWindowShouldClose(_window);
 
+        // Get current frame time and delta time
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         _deltaTime = deltaTime;
 
+        // Process user input
         processInput(_window);
 
+        // Clear OpenGL rendering buffer
         glClearColor(1.f, 1.f, 1.f, 1.f);
+        // Color and depth, to be exact
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Update all hooks
         _updateSub.on_next(_deltaTime);
         
+        // Swap double-buffered display
         glfwSwapBuffers(_window);
+        // Get new user input events
         glfwPollEvents();
 
         return 0;
@@ -776,23 +822,27 @@ public:
 
 	int term()
     {
+        // Clear all update hooks
         _uiDisp.unsubscribe();
         _modelDisp.unsubscribe();
         _frameDisp.unsubscribe();
 
-        // Cleanup
+        // Cleanup IMGUI UI
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
+        // Delete fullscreen quad buffers, data, and shader
         glDeleteBuffers(1, &_frameVerticesBufferId);
         glDeleteBuffers(1, &_frameUVsBufferId);
         glDeleteProgram(_frameShader->ID);
         glDeleteTextures(1, &_frameTextureId);
         glDeleteVertexArrays(1, &_frameVerticesId);
 
+        // Delete universal shader
         glDeleteProgram(ourShader->ID);
 
+        // Terminate GLFW session
         glfwTerminate();
 
         return 0;
