@@ -17,8 +17,8 @@ message(${GRPC++_REFLECTION})
 find_program(CRPC_CPP_PLUGIN grpc_cpp_plugin)
 
 set(PROTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/proto/network.proto
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/proto/network.proto
+        )
 
 set(PROTO_FILE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/proto)
 get_filename_component(PROTO_FILE ${PROTO_FILE_DIR}/network.proto ABSOLUTE)
@@ -27,22 +27,22 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 set(GRPC_COMP protoc)
 
 add_custom_command(
-    OUTPUT ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
-    COMMAND ${GRPC_COMP}
-    ARGS -I ${PROTO_FILE_DIR}
-      --cpp_out ${PROTO_SRC_DIR}
-      ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE}
+        OUTPUT ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
+        COMMAND ${GRPC_COMP}
+        ARGS -I ${PROTO_FILE_DIR}
+        --cpp_out ${PROTO_SRC_DIR}
+        ${PROTO_FILE}
+        DEPENDS ${PROTO_FILE}
 )
 
 add_custom_command(
-    OUTPUT ${PROTO_SRC_DIR}/network.grpc.pb.h ${PROTO_SRC_DIR}/network.grpc.pb.cc
-    COMMAND ${GRPC_COMP}
-    ARGS -I ${PROTO_FILE_DIR}
-      --grpc_out ${PROTO_SRC_DIR}
-      --plugin=protoc-gen-grpc=${CRPC_CPP_PLUGIN}
-      ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
+        OUTPUT ${PROTO_SRC_DIR}/network.grpc.pb.h ${PROTO_SRC_DIR}/network.grpc.pb.cc
+        COMMAND ${GRPC_COMP}
+        ARGS -I ${PROTO_FILE_DIR}
+        --grpc_out ${PROTO_SRC_DIR}
+        --plugin=protoc-gen-grpc=${CRPC_CPP_PLUGIN}
+        ${PROTO_FILE}
+        DEPENDS ${PROTO_FILE} ${PROTO_SRC_DIR}/network.pb.h ${PROTO_SRC_DIR}/network.pb.cc
 )
 
 # add_library(framework INTERFACE)
@@ -54,8 +54,8 @@ add_custom_command(
 # )
 
 target_include_directories(
-    framework
-    INTERFACE ${FRAMEWORK_INCLUDE_DIR}
+        framework
+        INTERFACE ${FRAMEWORK_INCLUDE_DIR}
 )
 
 
@@ -64,19 +64,19 @@ include_directories(${PROTO_SRC_DIR})
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}_grpc_handler
-    ${PROTO_SRC_DIR}/network.grpc.pb.h
-    ${PROTO_SRC_DIR}/network.grpc.pb.cc
-)
+        ${PROTO_SRC_DIR}/network.grpc.pb.h
+        ${PROTO_SRC_DIR}/network.grpc.pb.cc
+        )
 
 add_library(${PROJECT_NAME}_protobuf
-    ${PROTO_SRC_DIR}/network.pb.h
-    ${PROTO_SRC_DIR}/network.pb.cc
-)
+        ${PROTO_SRC_DIR}/network.pb.h
+        ${PROTO_SRC_DIR}/network.pb.cc
+        )
 
 # Set LIBS and use it to source libframework headers
 set(LIBS
-    ${CMAKE_SOURCE_DIR}/libs
-)
+        ${CMAKE_SOURCE_DIR}/libs
+        )
 # Add libframework headers to include path
 include_directories(${LIBS})
 
@@ -108,34 +108,34 @@ include_directories(${LIBS})
 
 
 add_executable(${PROJECT_NAME}_client
-    src/lib${PROJECT_NAME}/client.cpp
-)
+        src/lib${PROJECT_NAME}/client.cpp
+        )
 
 target_link_libraries(${PROJECT_NAME}_client
-    PUBLIC
-    glm
-    ${PROTOBUF}
-    ${GRPC}
-    ${GRPC++}
-    ${GRPC++_REFLECTION}
-    ${PROJECT_NAME}_grpc_handler
-    ${PROJECT_NAME}_protobuf
-)
+        PUBLIC
+        glm
+        ${PROTOBUF}
+        ${GRPC}
+        ${GRPC++}
+        ${GRPC++_REFLECTION}
+        ${PROJECT_NAME}_grpc_handler
+        ${PROJECT_NAME}_protobuf
+        )
 
 add_executable(${PROJECT_NAME}_server
-    src/lib${PROJECT_NAME}/server.cpp
-)
+        src/lib${PROJECT_NAME}/server.cpp
+        )
 
 target_link_libraries(${PROJECT_NAME}_server
-    PUBLIC
-    glm
-    ${PROTOBUF}
-    ${GRPC}
-    ${GRPC++}
-    ${GRPC++_REFLECTION}
-    ${PROJECT_NAME}_grpc_handler
-    ${PROJECT_NAME}_protobuf
-)
+        PUBLIC
+        glm
+        ${PROTOBUF}
+        ${GRPC}
+        ${GRPC++}
+        ${GRPC++_REFLECTION}
+        ${PROJECT_NAME}_grpc_handler
+        ${PROJECT_NAME}_protobuf
+        )
 
 # if(BUILD_TESTING)
 # 	add_subdirectory(tests)
