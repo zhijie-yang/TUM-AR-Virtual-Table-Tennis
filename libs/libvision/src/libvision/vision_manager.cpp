@@ -191,9 +191,6 @@ private:
             {
 
 
-            if (key == 13){
-
-
                 cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters,
                                          rejectedCandidates);
                 if (markerIds.empty())
