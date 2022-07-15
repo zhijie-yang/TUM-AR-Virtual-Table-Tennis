@@ -13,7 +13,7 @@
 #define VIEW_POINTS 8           // Viewpoints used to calibrate the camera
 #define MARKER_SIZE 0.035       // the side length of the marker unit:meter
 #define MARKER_PIXEL 199        // the pixel of one side of the marker
-#define THRESHOLD 5e-3          //threshold used to stablize the board detection
+#define THRESHOLD_DETECT 0.005          //threshold used to stablize the board detection
 namespace libvision {
 	class vision_manager {
 	private:

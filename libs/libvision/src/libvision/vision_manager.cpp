@@ -49,10 +49,10 @@ private:
     {
         bool f_rvec = false;
         bool f_tvec = false;
-        if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < THRESHOLD)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < THRESHOLD)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < THRESHOLD)){
+        if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < THRESHOLD_DETECT)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < THRESHOLD_DETECT)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < THRESHOLD_DETECT)){
             f_tvec = true;
         }
-        if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < THRESHOLD)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < THRESHOLD)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < THRESHOLD)){
+        if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < THRESHOLD_DETECT)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < THRESHOLD_DETECT)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < THRESHOLD_DETECT)){
             f_rvec = true;
         }
         return (f_rvec && f_rvec);
