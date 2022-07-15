@@ -8,6 +8,7 @@
 #include "libframework/include/infos.h"
 #include "libnetwork/include/client.h"
 
+#define RECONNECT_TICKS 50
 
 using namespace std;
 using namespace libtennis;
@@ -16,6 +17,8 @@ using namespace libvision;
 
 VirtualTennisNetworkClient *g_tennis_client = nullptr;
 PlayerInfo *g_player_info = nullptr;
+unsigned reconnect_tick_cnt = 0;
+librendering::rendering_manager::scene curr_scene = librendering::rendering_manager::scene::main_menu;
 
 int main(int, char **) {
 	vision_manager vision;
@@ -50,13 +53,14 @@ int main(int, char **) {
     vision.proj_serialize(rendering.proj_deserialize());
 
 	while (!rendering.quit_get()) {
-		// Initiating the connection with server
+		// creat the client instance
 		if (rendering.ready_to_register_get() && g_tennis_client == nullptr) {
 			g_tennis_client = new VirtualTennisNetworkClient(std::string(rendering.input_ip_get()), rendering.input_port_get(),
 														std::string(rendering.input_player_name_get()));
 			rendering.player1_deserialize()(rendering.input_player_name_get());
 		}
 
+		// connect to the server after the client instance has been created
 		if (g_tennis_client && !g_tennis_client->is_connected()) {
 			ClientConnectionResponse connection_res = g_tennis_client->connectServer();
 			std::cout << connection_res.get_detail() << std::endl;
@@ -64,6 +68,29 @@ int main(int, char **) {
 				g_player_info = new PlayerInfo(connection_res.get_player_info());
 			}
 		}
+
+		if (rendering.scene_get() == librendering::rendering_manager::scene::connection) {
+				if (g_tennis_client) {
+					g_tennis_client->disconnectServer();
+					delete g_tennis_client;
+					g_tennis_client = nullptr;
+				}
+			}
+
+		// get the name of the other player
+		if (g_tennis_client && g_tennis_client->is_connected() && !rendering.player_2_is_set()) {
+			rendering.paused_set(true);
+			reconnect_tick_cnt++;
+			if (reconnect_tick_cnt > RECONNECT_TICKS) {
+				reconnect_tick_cnt = 0;
+				std::string opp_name = g_tennis_client->getOpponentName();
+				if (opp_name != "_undefined") {
+					rendering.player_2_name_set(opp_name);
+					rendering.paused_set(false);
+				}
+			}
+		}
+
 
 		if (!rendering.paused_get()) {
             // TODO: receive from server
@@ -77,12 +104,13 @@ int main(int, char **) {
 				break;
 			}
 
-			if (g_tennis_client) {
+			if (g_tennis_client && g_tennis_client->is_connected()) {
 				RacketStatus rs(g_player_info->get_player_id(),
 												  Transform(vision.racket2table()), Velocity());
 				bool res = g_tennis_client->onVisionTickEnd(rs);
 				if (!res) cerr << "Error sending racket status error.\n";
 			}
+
             // vision serialize racket and table transformation for tennis and rendering
             vision.capture_serialize(rendering.capture_deserialize());
             vision.view_serialize(rendering.view_deserialize());
@@ -112,6 +140,7 @@ int main(int, char **) {
 			break;
 		}
         rendering.game_status_serialize(tennis.game_status_deserialize());
+		curr_scene = rendering.scene_get();
 	}
 
 	if (rendering.term()) {
@@ -122,6 +151,10 @@ int main(int, char **) {
 	if (vision.term()) {
 		cerr << "Failed to term vision.\n";
 		return 1;
+	}
+
+	if (g_tennis_client && g_tennis_client->is_connected()) {
+		g_tennis_client->disconnectServer();
 	}
 
 	if (g_tennis_client != nullptr) delete g_tennis_client;

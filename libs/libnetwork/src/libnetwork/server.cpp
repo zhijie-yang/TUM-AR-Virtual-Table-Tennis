@@ -206,8 +206,10 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                     auto manager = TennisServerManager::get_instance();
                     if (manager->get_client_inited().first && ip_addr == manager->get_client_ip().first) {
                         manager->dereg(static_cast<bool>(0));
+                        std::cout << "Player 1 deregistered" << std::endl;
                     } else if (manager->get_client_inited().second && ip_addr == manager->get_client_ip().second) {
                         manager->dereg(static_cast<bool>(1));
+                        std::cout << "Player 2 deregistered" << std::endl;
                     } else {
                         std::cerr << "Player not registered." << std::endl;
                         return grpc::Status(grpc::StatusCode::CANCELLED, "Player not registered.");
@@ -221,10 +223,16 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
                     auto manager = TennisServerManager::get_instance();
                     auto player_names = manager->get_client_name();
                     int pos = manager->get_player_pos(request->player_id());
-                    // !pos for the id of the other party
-                    auto name = get_pair_elm(player_names, !pos);
-                    response->set_player_name(name);
-                    return grpc::Status::OK;
+                    bool inited = get_pair_elm(manager->get_client_inited(), !pos);
+                    if (inited) {
+                        // !pos for the id of the other party
+                        auto name = get_pair_elm(player_names, !pos);
+                        response->set_player_name(name);
+                        return grpc::Status::OK;
+                    } else {
+                        std::cerr << "The other player not registered!\n";
+                        return grpc::Status(grpc::StatusCode::CANCELLED, "The other player not registered");
+                    }
                 }
 };
 

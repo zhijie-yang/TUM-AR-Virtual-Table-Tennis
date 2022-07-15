@@ -99,6 +99,7 @@ private:
     int _port = 5599; /**< Current port used in UI */
     std::string _player1Name; /**< Player 1 name used in UI */
     std::string _player2Name; /**< Player 2 name used in UI */
+    bool _player2IsSet = false;
     
     rendering_manager::scene _scene; /**< Current scene used in UI */
 
@@ -374,6 +375,15 @@ public:
 
     char* input_player_name_get() const {
         return (char*) _input_player_name;
+    }
+
+    void player_2_name_set(std::string const& name) {
+        _player2Name = name;
+        _player2IsSet = true;
+    }
+
+    bool player_2_is_set() const {
+        return _player2IsSet;
     }
 
 #pragma region Properties
@@ -718,20 +728,42 @@ public:
                         if (ImGui::InputInt("Port", &_port)) {}
                         if (ImGui::InputText("Name", _input_player_name, 256)) {}
 
-                        if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            scene_set(rendering_manager::scene::level);
-                            // TODO: start a server
+                        // if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
+                        //     scene_set(rendering_manager::scene::level);
+                        //     // TODO: start a server
 
-                            // TODO: call client.connectServer
-                        }
-                        ImGui::SameLine();
+                        //     // TODO: call client.connectServer
+                        // }
+                        // ImGui::SameLine();
                         if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                            scene_set(rendering_manager::scene::level);
+                            scene_set(rendering_manager::scene::waiting_p2);
                             // TODO: call client.connectServer
                             _ready_to_register = true;
                         }
                         if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
                             scene_set(rendering_manager::scene::main_menu);
+                        }
+
+                        ImGui::End();
+                    }
+                    break;
+                    case rendering_manager::scene::waiting_p2:
+                    {
+                        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                        ImGui::Begin("Multiplayer Connection", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+                        auto& style = ImGui::GetStyle();
+                        auto buttonWidth = ImGui::GetWindowWidth() - style.WindowPadding.x * 2.f;
+                        auto buttonHeight = 0.0f;
+
+                        ImGui::Text("Waiting for the other player");
+                        if (this->player_2_is_set()) {
+                            scene_set(rendering_manager::scene::level);
+                        }
+
+                        if (ImGui::Button("Cancel", ImVec2(buttonWidth, buttonHeight))) {
+                            _ready_to_register = false;
+                            scene_set(rendering_manager::scene::connection);
                         }
 
                         ImGui::End();
@@ -1071,4 +1103,12 @@ bool rendering_manager::ready_to_register_get() const {
 
 char* rendering_manager::input_player_name_get() const {
     return _impl->input_player_name_get();
+}
+
+void rendering_manager::player_2_name_set(std::string const& name) {
+    _impl->player_2_name_set(name);
+}
+
+bool rendering_manager::player_2_is_set() const {
+    return _impl->player_2_is_set();
 }
