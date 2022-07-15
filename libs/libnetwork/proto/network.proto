@@ -99,6 +99,7 @@ message RoundEndingResponse {
 message ScoreBoard {
     uint32 player_1_score = 1;
     uint32 player_2_score = 2;
+    uint32 maximum_score = 3;
 }
 
 message ServerBroadcast {
