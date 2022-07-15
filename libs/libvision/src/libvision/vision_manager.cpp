@@ -3,13 +3,12 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
 #include <tuple>
 #include <opencv2/calib3d.hpp>
 #include <glm/glm.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
-#include <iostream>
+#include <opencv2/video/tracking.hpp>
+#include <cmath>
 
 
 using namespace libvision;
@@ -19,8 +18,10 @@ using namespace std;
 #define RACKET_MARKER_ID 40
 #define MARKERS_NUM 3
 #define VIEW_POINTS 8
-#define MARKER_SIZE 0.07 // unit:meter
+#define MARKER_SIZE 0.05 // unit:meter
 #define MARKER_PIXEL 199
+#define STATES 12
+#define MEASURES 12
 class vision_manager::impl {
 private:
     cv::VideoCapture _cap;
@@ -34,23 +35,91 @@ private:
     cv::Ptr<cv::aruco::Board> _board;
     cv::Matx31d _board_rvec, _board_tvec;
     glm::mat4 _proj = glm::mat4(1.0f);
+    cv::Matx31d _Past_board_rvec, _Past_board_tvec;
+    cv::Matx31d _print_board_rvec, _print_board_tvec;
+    cv::KalmanFilter _KalmanFilter;
+
+    bool _found = false;
+    double _dt;
+    double _ticks = 0;
+    bool _compare_vector(cv::Matx31d board_rvec,cv::Matx31d board_tvec,cv::Matx31d past_board_rvec,cv::Matx31d past_board_tvec)
+    {
+        bool f_rvec = false;
+        bool f_tvec = false;
+        if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < 1e-3)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < 1e-3)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < 1e-3)){
+            f_tvec = true;
+        }
+        if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < 1e-3)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < 1e-3)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < 1e-3)){
+            f_rvec = true;
+        }
+        return f_rvec && f_rvec;
+    }
+    void _initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements, int nInputs)
+    {
+        KF.init(nStates, nMeasurements, nInputs, CV_64F);                 // init Kalman Filter
+        cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-5));       // set process noise
+        cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-4));   // set measurement noise
+        cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));             // error covariance
+        cv::setIdentity(KF.transitionMatrix);
+        cv::setIdentity(KF.measurementMatrix);
+        // transition matrix
+        //  [1 0 0 dt  0  0   0   0   0  0  0  0]
+        //  [0 1 0  0 dt  0   0   0   0  0  0  0]
+        //  [0 0 1  0  0 dt   0   0   0  0  0  0]
+        //  [0 0 0  1  0  0   0   0   0  0  0  0]
+        //  [0 0 0  0  1  0   0   0   0  0  0  0]
+        //  [0 0 0  0  0  1   0   0   0  0  0  0]
+        //  [0 0 0  0  0  0   1   0   0 dt  0  0]
+        //  [0 0 0  0  0  0   0   1   0  0 dt  0]
+        //  [0 0 0  0  0  0   0   0   1  0  0 dt]
+        //  [0 0 0  0  0  0   0   0   0  1  0  0]
+        //  [0 0 0  0  0  0   0   0   0  0  1  0]
+        //  [0 0 0  0  0  0   0   0   0  0  0  1]
+
+
+
+        /* MEASUREMENT MODEL */
+        //  [1 0 0 0 0 0 0 0 0 0 0 0]
+        //  [0 1 0 0 0 0 0 0 0 0 0 0]
+        //  [0 0 1 0 0 0 0 0 0 0 0 0]
+        //  [0 0 0 1 0 0 0 0 0 0 0 0]
+        //  [0 0 0 0 1 0 0 0 0 0 0 0]
+        //  [0 0 0 0 0 1 0 0 0 0 0 0]
+        //  [0 0 0 0 0 0 1 0 0 0 0 0]
+        //  [0 0 0 0 0 0 0 1 0 0 0 0]
+        //  [0 0 0 0 0 0 0 0 1 0 0 0]
+        //  [0 0 0 0 0 0 0 0 0 1 0 0]
+        //  [0 0 0 0 0 0 0 0 0 0 1 0]
+        //  [0 0 0 0 0 0 0 0 0 0 0 1]
+
+    }
+    void _set_transition_matrix(cv::KalmanFilter &KF, double dt)
+    {
+        KF.transitionMatrix.at<double>(0,3) = dt;
+        KF.transitionMatrix.at<double>(1,4) = dt;
+        KF.transitionMatrix.at<double>(2,5) = dt;
+        KF.transitionMatrix.at<double>(6,9) = dt;
+        KF.transitionMatrix.at<double>(7,10) = dt;
+        KF.transitionMatrix.at<double>(8,11) = dt;
+    }
+
 
     glm::mat4 _fill_mat4(cv::Matx31d rvec,cv::Matx31d tvec)
     {
         glm::mat4 _result;
         cv::Matx33d rmat;
         cv::Rodrigues(rvec, rmat);
-        for (size_t i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
-            for (size_t j = 0; j < 3; j++)
+            for (int j = 0; j < 3; j++)
             {
-                _result[i][j] = rmat.val[i + j * 3];
+                _result[i][j] = (float)rmat.val[i + j * 3];
             }
             _result[i][3] = 0.0f;
         }
-        for (size_t j = 0; j < 3; j++)
+        for (int j = 0; j < 3; j++)
         {
-            _result[3][j] = tvec.val[j];
+            _result[3][j] = (float)tvec.val[j];
         }
         _result[3][3] = 1.0f;
         return _result;
@@ -64,7 +133,6 @@ private:
         std::vector<std::vector<cv::Point3f>> objectPoints(3);
         markerImage = cv::imread("../data/marker.png");
         cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
-
         for (size_t i = 0; i < MARKERS_NUM; i++)
         {
             for (size_t j = 0; j < 4; j++)
@@ -124,6 +192,7 @@ private:
         // After capturing in several viewpoints, start calibration
         std::vector<cv::Mat> rvecs, tvecs;
         double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, _board, imgSize, _cameraMatrix, _distCoeffs, rvecs, tvecs);
+        _cameraMatrix =cv::getOptimalNewCameraMatrix(_cameraMatrix,_distCoeffs,imgSize,0.5);
         FileStorage fs("../data/camera_paras.yml", FileStorage::WRITE);
         fs << "cameraMatrix" << _cameraMatrix << "distCoeffs" << _distCoeffs;
         fs.release();
@@ -137,7 +206,6 @@ private:
         fs["cameraMatrix"] >> _cameraMatrix;
         fs["distCoeffs"] >> _distCoeffs;
         fs.release();
-
         glm::mat3 proj = glm::mat3(1.0f);
         for (size_t i = 0; i < 3; i++)
         {
@@ -150,7 +218,6 @@ private:
                           glm::vec4(proj[1], 0),
                           glm::vec4(proj[2], 0),
                           glm::vec4(0, 0, 0, 1));
-
         return 0;
     }
 
@@ -180,13 +247,15 @@ private:
 
     int _detect_markers()
     {
-        cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
-        if (_markerIds.size() == 0)
+        cv::Mat detect_frame;
+        undistort(_frame, detect_frame, _cameraMatrix, _distCoeffs);
+        cv::aruco::detectMarkers(detect_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
+        if (_markerIds.empty())
         {
             std::cerr << "Failed to detect markers"<< std::endl;
             return -1;
         }
-
+        _set_transition_matrix(_KalmanFilter,_dt);
         return 0;
     }
 
@@ -198,22 +267,95 @@ private:
             std::cerr << "Estimation failed"<< std::endl;
             return -1;
         }
-
         _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
         _board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
         _board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
-        cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
+        //std::cout << _board_rvec << std::endl;
+        //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE);
+        if (_found)
+        {
+            if (_compare_vector(_board_rvec,_board_tvec,_Past_board_rvec,_Past_board_tvec)){
+                _print_board_rvec = _board_rvec;
+                _print_board_tvec = _print_board_tvec;
+            }
+            _Past_board_tvec = _board_tvec;
+            _Past_board_rvec = _board_rvec;
+//            cv::Mat predict_state = _KalmanFilter.predict();
+//            cv::Mat meas(MEASURES, 1, CV_64F, Scalar(0));
+//            cv::Mat past_state = _KalmanFilter.temp1;
+//            meas.at<double>(0) = _board_tvec.val[0];
+//            meas.at<double>(1) = _board_tvec.val[1];
+//            meas.at<double>(2) = _board_tvec.val[2];
+//            meas.at<double>(3) = _board_tvec.val[0]-past_state.at<double>(0);
+//            meas.at<double>(4) = _board_tvec.val[1]-past_state.at<double>(1);
+//            meas.at<double>(5) = _board_tvec.val[2]-past_state.at<double>(2);
+//            meas.at<double>(6) = _board_rvec.val[0];
+//            meas.at<double>(7) = _board_rvec.val[1];
+//            meas.at<double>(8) = _board_rvec.val[2];
+//            meas.at<double>(9) = _board_rvec.val[0]-past_state.at<double>(6);
+//            meas.at<double>(10) = _board_rvec.val[1]-past_state.at<double>(7);
+//            meas.at<double>(11) = _board_rvec.val[2]-past_state.at<double>(8);
+//            /*
+//            std::cout << "measure state" <<std::endl;
+//            std::cout<<meas <<endl;
+//            cout << endl;
+//            std::cout << "statepost state" <<std::endl;
+//            std::cout<<_KalmanFilter.statePost <<endl;
+//            cout << endl;*/
+//            _KalmanFilter.correct(meas);
+//            //std::cout << "statepost state" <<std::endl;
+//            //std::cout<<_KalmanFilter.statePost <<endl;
+//            //cout << endl;
+//            _board_tvec.val[0] = predict_state.at<double>(0);
+//            _board_tvec.val[1] = predict_state.at<double>(1);
+//            _board_tvec.val[2] = predict_state.at<double>(2);
+//            _board_rvec.val[0] = predict_state.at<double>(6);
+//            _board_rvec.val[1] = predict_state.at<double>(7);
+//            _board_rvec.val[2] = predict_state.at<double>(8);
+        }
+        else
+        {
+//            cv::Mat init_state(STATES,1,CV_64F,Scalar(0));
+//            init_state.at<double>(0) = _board_tvec.val[0];
+//            init_state.at<double>(1) = _board_tvec.val[1];
+//            init_state.at<double>(2) = _board_tvec.val[2];
+//            init_state.at<double>(3) = 0.0f;
+//            init_state.at<double>(4) = 0.0f;
+//            init_state.at<double>(5) = 0.0f;
+//            init_state.at<double>(6) = _board_rvec.val[0];
+//            init_state.at<double>(7) = _board_rvec.val[1];
+//            init_state.at<double>(8) = _board_rvec.val[2];
+//            init_state.at<double>(9) = 0.0f;
+//            init_state.at<double>(10) = 0.0f;
+//            init_state.at<double>(11) = 0.0f;
+//            _KalmanFilter.statePost = init_state;
+//            //std::cout << "statepost state" <<std::endl;
+//            //std::cout<<_KalmanFilter.statePost <<endl;
+//            //cout << endl;
+//            _KalmanFilter.temp1 = init_state;
+            _Past_board_rvec = _board_rvec;
+            _Past_board_tvec = _board_tvec;
+            _print_board_rvec = _board_rvec;
+            _print_board_tvec = _board_tvec;
+            _found = true;
 
-        cv::drawFrameAxes(_frame, _cameraMatrix,_distCoeffs,_board_tvec,_board_tvec,0.1);
-        cv::imshow("Webcam", _frame);
+        }
+
+        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _Past_board_rvec, _Past_board_tvec, MARKER_SIZE);
+        //std::cout << _board_rvec << std::endl;
+        //std::cout <<  std::endl;
+        //waitKey(1500);
         std::vector<cv::Matx31d> rvecs, tvecs;
 
         cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
         bool f_racket = false;
+        cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
 
 
         for (size_t i = 0; i < _markerIds.size(); i++)
         {
+            //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
+
             if (_markerIds[i] == RACKET_MARKER_ID)
             {
                 rvecs[i] = _transPerspective(rvecs[i]);
@@ -233,6 +375,7 @@ private:
             cv::composeRT(srvec, stvec, inv_rvec, inv_tvec, t_rvec, t_tvec);
             _racket2table = _fill_mat4(t_rvec,t_tvec);
             _racket2cam = _fill_mat4(srvec, stvec);
+
 
             //glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
             //glm::vec3(_result[1]);
@@ -276,13 +419,23 @@ public:
             return -1;
         }
         _create_board();
-        _save_calibrate_paras();
+
+        //_save_calibrate_paras();
         _read_calibrate_paras();
+
+
+        _initKalmanFilter(_KalmanFilter, STATES, MEASURES, 0);    // init function
+
+
         return 0;
     }
 
     int run_tick()
     {
+
+        double precTick = _ticks;
+        _ticks = (double) cv::getTickCount();
+        _dt = (_ticks - precTick) / cv::getTickFrequency();
         _cap >> _frame;
 
         if (_frame.empty())
@@ -301,6 +454,7 @@ public:
 
         return 0;
     }
+
 
     int racket1_serialize(const std::function<int(float*)>& processor)
     {
@@ -366,6 +520,7 @@ public:
                 _proj[3][0], _proj[3][1], _proj[3][2], _proj[3][3]};
         return processor(arr_model);
     }
+
 };
 
 vision_manager::vision_manager()
@@ -403,6 +558,7 @@ int vision_manager::term()
 int vision_manager::capture_serialize(const std::function<int(void*, int, int, int)>& processor)
 {
     return _impl->capture_serialize(processor);
+
 }
 
 int vision_manager::racket1_serialize(const std::function<int(float *)> &processor) {
@@ -423,4 +579,5 @@ int vision_manager::proj_serialize(const std::function<int(float *)> &processor)
 
 int vision_manager::view_serialize(const std::function<int(float *)> &processor) {
     return _impl->view_serialize(processor);
+
 }
