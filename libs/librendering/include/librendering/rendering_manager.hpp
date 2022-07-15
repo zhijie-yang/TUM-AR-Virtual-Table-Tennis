@@ -23,6 +23,7 @@ namespace librendering {
 			connection, /**< Play session setup screen, where you can join a server */
 			level, /**< Level screen, where you actually play the game */
 			ending, /**< Ending screen, showing the final game score */
+			waiting_p2,
 		};
 
 		rendering_manager();
@@ -67,6 +68,8 @@ namespace librendering {
 		int input_port_get() const;
 		bool ready_to_register_get() const;
 		char* input_player_name_get() const;
+		void player_2_name_set(std::string const& name);
+		bool player_2_is_set() const;
 
 		std::function<int(void*, int, int, int)> capture_deserialize();
 

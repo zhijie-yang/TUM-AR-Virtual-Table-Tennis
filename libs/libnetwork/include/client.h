@@ -49,7 +49,8 @@ public:
                 RacketStatus& racket_status, BallStatus& ball_status,
                 ScoreBoard& score_board, unsigned& turn_owner);
 
-    bool is_connected() {return this->connected;}
+    inline bool is_connected() {return this->connected;}
+    inline unsigned get_player_id() {return this->player_id;}
 
 private:
     std::unique_ptr<libnetwork::VirtualTennis::Stub> stub_;
