@@ -30,14 +30,19 @@ The virtual table tennis game is implemented in **C++** . The game uses several 
    * Calculating frame processing time
 3. libtennis
    * Game Logic
+   * Collision detection
 4. libnetwork
-   * Enable Two-player match across local network
+   * Enable two-player match across local network
 5. libframework
    * Define compatible data structures used for different libraries
 
-
+The game assumes players using HDM head-mountded display to play table tennis game. The players first need to calibrate the camera once for the future usage. The vision manager needs to detect one of the markers for boards and the marker for racket to determine location respectively. After the detection, the table, ball and other objects are rendered. After user getting into the UI, user can start the table tennis game according to the game rule. Alternatively, they can use local network to enable multiplayer gaming.
 
 ## Dependencies
+
+- libvision: `Opencv` and `Opencv_contrib` for image tracking
+- librendering: `OpenGL`
+- libnetwork: `grpc`
 
 ## Usage
 
