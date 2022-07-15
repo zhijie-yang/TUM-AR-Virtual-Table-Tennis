@@ -22,16 +22,16 @@ private:
     bool _isTurnOwner;
     int _numHitTable; // 0 to 3
 
-    // deserialization
+    // deserialization acrossing different library
     glm::mat4 _racket1Model;
     glm::mat4 _tableModel;
     glm::mat4 _netModel;
     float _timestep;
 
-    bool _isServingTurn = false;
-    bool _gravity = false;
-    bool _airResistance= false;
-    bool _gameEnd = false;
+    bool _isServingTurn = false;      //if serve current turn
+    bool _gravity = false;            //if apply gravity when moving
+    bool _airResistance= false;       //if apply air Resistance when moving
+    bool _gameEnd = false;            //if the game is ended
 
     ScoreBoard _board;
 
@@ -50,7 +50,7 @@ private:
         }
         return force;
     }
-
+    // when a turn end, reset to the initial state and check if the game ends
     void _endCurrentTurn(bool win) {
         _ball.set_status(FlyingStatus::WAITING_START); // reset serving status
         _isServingTurn = false;
@@ -79,7 +79,7 @@ private:
             return;
         }
     }
-
+    // scaling the models for collision detection
     glm::mat4 _obj2World(glm::mat4 model, int objClass) {
         glm::vec3 table_scale = CONST_TABLE_SCALE;
         glm::vec3 ball_scale = CONST_BALL_SCALE;
@@ -128,10 +128,11 @@ public:
         return _board.get_player_1_score() >= _board.get_maximum_score() || _board.get_player_2_score() >= _board.get_maximum_score();
     }
 
+
     int run_tick() {
         float timestep = _timestep / 4;
         for (int i = 0; i < 4; i++) {
-
+            // if the player is serving
             if (_isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
                 _ball.set_position(_player1_init_ball_pos);
                 _ball.set_velocity(glm::vec3(0, 0, 0));
@@ -148,12 +149,13 @@ public:
             glm::vec3 acc = force / float(CONST_BALL_MASS);
             _ball.set_velocity(_ball.get_velocity() + timestep * acc);
             _ball.set_position(_ball.get_position() + timestep * _ball.get_velocity());
-
+            //detect collision
             glm::mat4 ball2World = _obj2World(_ball.get_pose().get_transform(), 1);
             CollisionInfo ball_coll_racket = checkCollisionSAT(ball2World, racket2World);
             CollisionInfo ball_coll_table = checkCollisionSAT(ball2World, table2World);
             CollisionInfo ball_coll_net = checkCollisionSAT(ball2World, net2World);
             if (ball_coll_racket.isValid && !_isTurnOwner) {
+                // when the ball hit the enemy's racket,change turn owner.
                 std::cout << "Hit racket, change turn owner!" << std::endl;
                 _isTurnOwner = true;
 
@@ -161,6 +163,7 @@ public:
                 glm::vec3 direction = ball_coll_racket.normalWorld;
                 _ball.set_velocity(glm::vec3(direction.x, 2, -0.5));
             } else if (ball_coll_racket.isValid && _isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
+                //serve the ball
                 std::cout << "Turn owner serve ball!" << std::endl;
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
                 _isServingTurn = true;
