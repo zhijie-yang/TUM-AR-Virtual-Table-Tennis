@@ -22,6 +22,7 @@ using namespace std;
 #define MARKER_PIXEL 199
 #define STATES 12
 #define MEASURES 12
+#define THRESHOLD 5e-3
 class vision_manager::impl {
 private:
     cv::VideoCapture _cap;
@@ -46,11 +47,11 @@ private:
     {
         bool f_rvec = false;
         bool f_tvec = false;
-        if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < 1e-3)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < 1e-3)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < 1e-3)){
+        if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < THRESHOLD)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < THRESHOLD)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < THRESHOLD)){
             f_tvec = true;
 
         }
-        if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < 1e-3)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < 1e-3)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < 1e-3)){
+        if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < THRESHOLD)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < THRESHOLD)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < THRESHOLD)){
             f_rvec = true;
         }
         return (f_rvec && f_rvec);
@@ -172,7 +173,7 @@ private:
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
 
-            if (key == 13) {
+
                 cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters,
                                          rejectedCandidates);
                 cv::imshow("Webcam", _frame);
@@ -188,7 +189,7 @@ private:
                 );
                 markerCounterPerFrame.push_back((int) markerIds.size());
                 count++;
-            }
+
             if (count == VIEW_POINTS)
             {
                 break;
@@ -350,7 +351,7 @@ private:
         }
 
         cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _print_board_rvec, _print_board_tvec, MARKER_SIZE);
-
+        cv::imshow("Webcam", _frame);
         //std::cout << _board_rvec << std::endl;
         //std::cout <<  std::endl;
         //waitKey(1500);

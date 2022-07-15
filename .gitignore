@@ -38,5 +38,5 @@ out/
 .vscode/
 proto_src/
 .idea
-
+.DS_Store
 CMakeSettings.json

@@ -1,0 +1,129 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "libs/libvision/libvisiond.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_include_directories",
+			"target_link_libraries",
+			"target_compile_features"
+		],
+		"files" : 
+		[
+			"libs/libvision/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk"
+				},
+				{
+					"fragment" : "-std=gnu++14"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 2,
+					"path" : "/Users/liyif/Desktop/virtualtennis/libs/libvision/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/Users/liyif/Desktop/virtualtennis/libs/libvision/src"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/Users/liyif/Desktop/virtualtennis/vendor/glm"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/opt/homebrew/Cellar/opencv/4.5.5_3/include/opencv4"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					4
+				],
+				"standard" : "14"
+			},
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"id" : "vision::@b0b44c21a3d1d38ad3c5",
+	"name" : "vision",
+	"nameOnDisk" : "libvisiond.a",
+	"paths" : 
+	{
+		"build" : "libs/libvision",
+		"source" : "libs/libvision"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "libs/libvision/src/libvision/vision_manager.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}
