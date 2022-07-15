@@ -48,15 +48,17 @@ public:
 class ScoreBoard {
 public:
     ScoreBoard(){}
-    ScoreBoard(unsigned const& player_1_score, unsigned const& player_2_score) {
+    ScoreBoard(unsigned const& player_1_score, unsigned const& player_2_score, unsigned const& maximum_score) {
         this->player_1_score = player_1_score;
         this->player_2_score = player_2_score;
+        this->maximum_score = maximum_score;
     }
     ~ScoreBoard(){}
 
 private:
     unsigned player_1_score;
     unsigned player_2_score;
+    unsigned maximum_score;
 
 public:
     inline unsigned get_player_1_score() {
@@ -67,21 +69,28 @@ public:
         return this->player_2_score;
     }
 
+    inline unsigned get_maximum_score() {
+        return this->maximum_score;
+    }
+
     inline void toProto(libnetwork::ScoreBoard& r) {
         r.set_player_1_score(this->player_1_score);
         r.set_player_2_score(this->player_1_score);
+        r.set_maximum_score(this->maximum_score);
     }
 
     inline libnetwork::ScoreBoard* toProtoAllocated() {
         auto r = new libnetwork::ScoreBoard();
         r->set_player_1_score(this->player_1_score);
         r->set_player_2_score(this->player_1_score);
+        r->set_maximum_score(this->maximum_score);
         return r;
     }
 
     inline static void fromProto(const libnetwork::ScoreBoard &r, ScoreBoard &out) {
         out.player_1_score = r.player_1_score();
         out.player_2_score = r.player_2_score();
+        out.maximum_score = r.maximum_score();
     }
 
 };
