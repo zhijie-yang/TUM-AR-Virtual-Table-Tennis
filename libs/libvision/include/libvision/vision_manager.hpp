@@ -7,7 +7,13 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
-
+#define CENTER_MARKER_ID 23
+#define RACKET_MARKER_ID 40
+#define MARKERS_NUM 3           //The number of markers on the board
+#define VIEW_POINTS 8           // Viewpoints used to calibrate the camera
+#define MARKER_SIZE 0.035       // the side length of the marker unit:meter
+#define MARKER_PIXEL 199        // the pixel of one side of the marker
+#define THRESHOLD_DETECT 0.005          //threshold used to stablize the board detection
 namespace libvision {
 	class vision_manager {
 	private:
