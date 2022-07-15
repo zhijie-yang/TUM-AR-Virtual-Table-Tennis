@@ -1,6 +1,7 @@
 # Virtual Tennis
-
+ 
 > A multiplayer AR tennis game.
+
 
 Components:
 
@@ -9,6 +10,34 @@ Components:
 - `libs/libtennis/tests`.
 - `libs/librendering`.
 - `libs/libvision`.
+
+## Group Member
+Mykola Morozov
+Yifeng Li
+Siyun Liang
+Zhijie Yang
+
+## Description
+The virtual table tennis game is implemented in **C++** . The game uses several libraries:
+1. libvision
+   * Using *opencv* functions to do camera calibration and necessary computation in rotation and translation matrix.
+   * Using *ArUco* to create a marker board for table and marker for racket. 
+2. librendering
+   * Loading video capture into *OpenGL*
+   * Handling Desktop Window display and user input
+   * Rendering the video capture, ball, table and rackets inside the window 
+   * Drawing UI and displaying pop-ups
+   * Calculating frame processing time
+3. libtennis
+   * Game Logic
+4. libnetwork
+   * Enable Two-player match across local network
+5. libframework
+   * Define compatible data structures used for different libraries
+
+
+
+## Dependencies
 
 ## Usage
 
