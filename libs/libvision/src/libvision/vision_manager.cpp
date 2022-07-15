@@ -26,7 +26,7 @@ private:
     cv::VideoCapture _cap;
     cv::Mat _frame;
     cv::Mat _cameraMatrix, _distCoeffs;
-    glm::mat4 _racket2table,_table2cam,_racket2cam = glm::mat4(1.0f);
+    glm::mat4 _racket2table,_table2cam,_racket2cam;
     cv::Ptr<cv::aruco::Dictionary> _dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::Ptr<cv::aruco::DetectorParameters> _parameters = cv::aruco::DetectorParameters::create();
     std::vector<std::vector<cv::Point2f>> _markerCorners, _rejectedCandidates;
@@ -65,11 +65,18 @@ private:
         markerImage = cv::imread("../data/marker.png");
         cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
 
+        float middle_x;
+        float middle_y;
+
+        middle_x = (markerCorners[1][0].x + markerCorners[1][1].x + markerCorners[1][2].x + markerCorners[1][3].x) / 4;
+        middle_y = (markerCorners[1][0].y + markerCorners[1][1].y + markerCorners[1][2].y + markerCorners[1][3].y) / 4;
+
         for (size_t i = 0; i < MARKERS_NUM; i++)
         {
             for (size_t j = 0; j < 4; j++)
             {
-                objectPoints[i].push_back(Point3f(markerCorners[i][j].x , markerCorners[i][j].y , 0.0));
+
+                objectPoints[i].push_back(Point3f(markerCorners[i][j].x - middle_x, markerCorners[i][j].y - middle_y, 0.0));
             }
         }
         _board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
@@ -202,14 +209,13 @@ private:
         _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
         _board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
         _board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
-        cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
-
-        cv::drawFrameAxes(_frame, _cameraMatrix,_distCoeffs,_board_tvec,_board_tvec,0.1);
+        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE / 2);
         cv::imshow("Webcam", _frame);
         std::vector<cv::Matx31d> rvecs, tvecs;
 
         cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
         bool f_racket = false;
+        cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
 
 
         for (size_t i = 0; i < _markerIds.size(); i++)
@@ -348,7 +354,7 @@ public:
 
     int table_serialize(const std::function<int(float*)>& processor)
     {
-        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 model = _table2cam;
         float arr_model[16] = {
                 model[0][0], model[0][1], model[0][2], model[0][3],
                 model[1][0], model[1][1], model[1][2], model[1][3],

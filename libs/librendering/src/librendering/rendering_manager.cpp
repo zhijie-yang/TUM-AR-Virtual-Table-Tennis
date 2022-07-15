@@ -32,6 +32,8 @@
 #include <librendering/camera.h>
 #include <librendering/model.h>
 
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include "libframework/include/constant.h"
 
 using namespace librendering;
@@ -95,6 +97,8 @@ private:
     rendering_manager::scene _scene;
 
     bool _gameEnd = false;
+    glm::vec3 table_translate;
+
 public:
     // camera
     Camera camera;
@@ -164,7 +168,16 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-            _racket1Model[3][1] = _racket1Model[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
+
+            glm::mat4 transform = glm::mat4(glm::vec4(1, 0, 0, 0),glm::vec4(0, 0, 1, 0),glm::vec4(0, -1, 0, 0),glm::vec4(0, 0, 0, 1))
+                            * _racket1Model;
+            _racket1Model = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f));
+            _racket1Model = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _racket1Model;
+
+            _racket1Model = transform * _racket1Model;
+
+            _racket1Model = glm::translate( table_translate) * _racket1Model;
+
             return 0;
         };
     }
@@ -178,7 +191,13 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-            _ballModel[3][1] = _ballModel[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
+
+            glm::vec3 translate = glm::vec3(_ballModel[3]);
+            _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f));
+            _ballModel = glm::translate( translate) * _ballModel;
+            _ballModel = glm::translate( table_translate) * _ballModel;
+
+
             return 0;
         };
     }
@@ -187,19 +206,25 @@ public:
     {
         return [&](float* data) -> int
         {
-
             glm::vec3 table_scale = CONST_TABLE_SCALE;
             float net_height = table_scale.y;
             table_scale.y = table_scale.z;
             table_scale.z = net_height;
+            _tableModel = glm::mat4(1.0f);
 
-            _tableModel = glm::mat4(
-                    glm::vec4(data[0], data[1], data[2], data[3]),
-                    glm::vec4(data[4], data[5], data[6], data[7]),
-                    glm::vec4(data[8], data[9], data[10], data[11]),
-                    glm::vec4(data[12], data[13], data[14], data[15]));
-            _tableModel[3][1] = _tableModel[3][1] - (CONST_TABLE_SCALE.z/2 + 0.5);
-            _tableModel = _tableModel * glm::scale(table_scale);
+            _tableModel = glm::scale(table_scale) * _tableModel;
+            _tableModel = glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
+            _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * _tableModel;
+            _tableModel = glm::translate( glm::vec3(0, -_view[3][1], 0)) * _tableModel;
+
+            glm::vec3 scale;
+            glm::quat rotation;
+            glm::vec3 translation;
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(_tableModel, scale, rotation, translation, skew, perspective);
+            table_translate = translation;
+
             return 0;
         };
     }
@@ -213,11 +238,6 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-
-            _view = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-                             glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-                             glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-                             glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) * _view;
 
             return 0;
         };
@@ -352,13 +372,8 @@ public:
         _view = glm::mat4(1.0f);
         _proj = glm::perspective(glm::radians(45.0f), (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
         _ballModel = glm::mat4(1.0f);
-        _ballModel = glm::translate(_ballModel, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        _ballModel = glm::translate(_ballModel, glm::vec3(-0.25f, 0.1f, 0.6f)); // translate it down so it's at the center of the scene
-        _ballModel = glm::scale(_ballModel, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         
         _tableModel = glm::mat4(1.f);
-        _tableModel = _tableModel * glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.f, 0.f, 0.f));
-        _tableModel = _tableModel * glm::scale(glm::vec3(1.525f, 0.1525f, 2.74f)) * glm::mat4(1.0f);
         // ---------------------------------------
         // GLFW Initialization
         // ---------------------------------------
@@ -463,8 +478,8 @@ public:
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
                 _racketObject->Draw(*ourShader);
-                ourShader->setMat4("model", _racket2Model);
-                _racketObject->Draw(*ourShader);
+                //ourShader->setMat4("model", _racket2Model);
+                //_racketObject->Draw(*ourShader);
 
                 ourShader->setMat4("model", _tableModel);
                 _tableObject->Draw(*ourShader);
@@ -750,8 +765,6 @@ public:
 
         glClearColor(1.f, 1.f, 1.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        
 
         _updateSub.on_next(_deltaTime);
         
