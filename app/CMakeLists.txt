@@ -13,4 +13,4 @@ target_link_libraries(${PROJECT_NAME}
 		libs::vision
 )
 
-file(COPY ${CMAKE_SOURCE_DIR}/data/marker.png DESTINATION ${CMAKE_BINARY_DIR}/data)
+configure_file(${CMAKE_SOURCE_DIR}/data/marker.png ${CMAKE_BINARY_DIR}/data COPYONLY)
