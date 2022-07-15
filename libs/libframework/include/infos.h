@@ -73,6 +73,18 @@ public:
         return this->maximum_score;
     }
 
+    inline void set_player_1_score(int const& score) {
+        this->player_1_score = score;
+    }
+
+    inline void set_player_2_score(int const& score) {
+        this->player_2_score = score;
+    }
+
+    inline void set_maximum_score(int const& score) {
+        this->maximum_score = score;
+    }
+
     inline void toProto(libnetwork::ScoreBoard& r) {
         r.set_player_1_score(this->player_1_score);
         r.set_player_2_score(this->player_1_score);

@@ -119,7 +119,6 @@ int main(int, char **) {
             vision.racket2_serialize(rendering.racket2_deserialize());
 
             vision.racket1_serialize(tennis.racket1_deserialize());
-            vision.racket2_serialize(tennis.racket2_deserialize());
             vision.table_serialize(tennis.table_deserialize());
 
             if (tennis.run_tick()) {
@@ -127,8 +126,6 @@ int main(int, char **) {
                 break;
             }
             tennis.ball_serialize(rendering.ball_deserialize());
-            tennis.score1_serialize(rendering.score1_deserialize());
-            tennis.score2_serialize(rendering.score2_deserialize());
             tennis.game_status_serialize(rendering.game_status_deserialize());
 		}
 

@@ -7,7 +7,8 @@
 
 #include <glm/gtx/transform.hpp>
 #include "collisionDetect.h"
-#include "scoreboard.h"
+#include "libframework/include/ball_status.h"
+#include "libframework/include/infos.h"
 
 namespace libtennis {
     class tennis_manager {
@@ -20,13 +21,12 @@ namespace libtennis {
         int run_tick();
         std::function<int(const float&)> frametime_deserialize();
         std::function<int(float*)> racket1_deserialize();
-        std::function<int(float*)> racket2_deserialize();
         std::function<int(float*)> table_deserialize();
         std::function<int(const bool&)> game_status_deserialize();
         int ball_serialize(const std::function<int(float*)>& processor);
-        int score1_serialize(const std::function<int(int)>& processor);
-        int score2_serialize(const std::function<int(int)>& processor);
         int game_status_serialize(const std::function<int(bool)>& processor);
+
+        void simulation_serialize(BallStatus &ball, ScoreBoard &board, bool &isTurnOwner);
 
     private:
         std::unique_ptr<impl> _impl;
