@@ -46,7 +46,6 @@ int main(int, char **) {
 		return 1;
 	}
 
-	// TODO: For debugging, remove later
 	rendering.scene_set(rendering_manager::scene::main_menu);
 	rendering.player1_deserialize()("John");
 	rendering.player2_deserialize()("Sam");
@@ -104,6 +103,7 @@ int main(int, char **) {
 				break;
 			}
 
+			// send racket status of current player to the server
 			if (g_tennis_client && g_tennis_client->is_connected()) {
 				RacketStatus rs(g_player_info->get_player_id(),
 												  Transform(vision.racket2table()), Velocity());
@@ -125,13 +125,33 @@ int main(int, char **) {
                 cerr << "Failed to run tick tennis.\n";
                 break;
             }
+
+			if (g_tennis_client && g_tennis_client->is_connected()) {
+				BallStatus bs;
+				ScoreBoard sb;
+				bool is_turn_owner;
+				tennis.simulation_serialize(bs, sb, is_turn_owner);
+				// TODO when to change turn owner?
+				// consider not only hit with racket
+				if (bs.get_status() == FlyingStatus::HIT_WITH_RACKET) {
+					g_tennis_client->changeTurn();
+				}
+				g_tennis_client->onTennisTickEnd(bs, sb, is_turn_owner);
+			}
+
             tennis.ball_serialize(rendering.ball_deserialize());
             tennis.game_status_serialize(rendering.game_status_deserialize());
 		}
 
         // TODO: only the turn owner send latest ball status to server
         // TODO: each user should send racket status
-
+		BallStatus bs;
+		ScoreBoard sb;
+		RacketStatus opponent_rs;
+		rendering.racket2_deserialize()((float*) (opponent_rs.get_pose().get_value_ptr()));
+		rendering.ball_deserialize()((float*) (bs.get_pose().get_value_ptr()));
+		rendering.score1_deserialize()(sb.get_player_1_score());
+		rendering.score2_deserialize()(sb.get_player_2_score());
 		if (rendering.run_tick()) {
 			cerr << "Failed to run tick rendering.\n";
 			break;

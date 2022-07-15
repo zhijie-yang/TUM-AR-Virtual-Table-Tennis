@@ -39,6 +39,10 @@ public:
         Transform::fromProto(r.pose(), out.pose);
         Velocity::fromProto(r.velocity(), out.velocity);
     }
+
+    inline Transform get_pose() const {
+        return this->pose;
+    }
 };
 
 #endif // !LIBFRAMEWORK_RACKET

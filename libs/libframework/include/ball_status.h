@@ -64,8 +64,8 @@ public:
         return this->pose.get_translation();
     }
 
-    inline glm::mat4 get_pose() {
-        return this->pose.get_transform();
+    inline Transform get_pose() {
+        return this->pose;
     }
 
     inline FlyingStatus get_status() {
