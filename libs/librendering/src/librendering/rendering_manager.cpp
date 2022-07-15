@@ -96,7 +96,7 @@ private:
     float _popupDuration; /**< How much longer to display the popup */
 
     char _ipAddress[256] = "127.0.0.1"; /**< Current ip address used in UI */
-    int _port = 5599; /**< Current port used in UI */
+    int _port = 50051; /**< Current port used in UI */
     std::string _player1Name; /**< Player 1 name used in UI */
     std::string _player2Name; /**< Player 2 name used in UI */
     bool _player2IsSet = false;

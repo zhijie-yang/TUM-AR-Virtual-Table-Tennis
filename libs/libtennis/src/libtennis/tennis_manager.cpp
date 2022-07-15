@@ -149,7 +149,7 @@ public:
             _ball.set_velocity(_ball.get_velocity() + timestep * acc);
             _ball.set_position(_ball.get_position() + timestep * _ball.get_velocity());
 
-            glm::mat4 ball2World = _obj2World(_ball.get_pose(), 1);
+            glm::mat4 ball2World = _obj2World(_ball.get_pose().get_transform(), 1);
             CollisionInfo ball_coll_racket = checkCollisionSAT(ball2World, racket2World);
             CollisionInfo ball_coll_table = checkCollisionSAT(ball2World, table2World);
             CollisionInfo ball_coll_net = checkCollisionSAT(ball2World, net2World);
@@ -289,7 +289,7 @@ public:
 
     int ball_serialize(const std::function<int(float*)>& processor)
     {
-        glm::mat4 model = _ball.get_pose();
+        glm::mat4 model = _ball.get_pose().get_transform();
         float arr_model[16] = {
                 model[0][0], model[0][1], model[0][2], model[0][3],
                 model[1][0], model[1][1], model[1][2], model[1][3],
