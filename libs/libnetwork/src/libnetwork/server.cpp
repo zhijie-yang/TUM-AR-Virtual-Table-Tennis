@@ -1,7 +1,5 @@
 #include "libnetwork/include/server.h"
 #include <grpc++/grpc++.h>
-#include <grpc++/ext/proto_server_reflection_plugin.h>
-#include <grpc++/health_check_service_interface.h>
 #include "network.pb.h"
 #include "network.grpc.pb.h"
 #include "libframework/include/ball_status.h"
@@ -241,7 +239,6 @@ void RunServer() {
     ConnectionServiceImpl service;
 
     grpc::EnableDefaultHealthCheckService(true);
-    grpc::reflection::InitProtoReflectionServerBuilderPlugin();
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
