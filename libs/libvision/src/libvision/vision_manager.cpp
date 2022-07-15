@@ -9,8 +9,9 @@
 #include <glm/glm.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
-#include <iostream>
-
+#include <opencv2/video/tracking.hpp>
+#include <cmath>
+#include <fstream>
 
 using namespace libvision;
 using namespace cv;
@@ -24,6 +25,7 @@ using namespace std;
 #define STATES 12
 #define MEASURES 12
 #define THRESHOLD 5e-3
+
 class vision_manager::impl {
 private:
     cv::VideoCapture _cap;
@@ -156,6 +158,12 @@ private:
 
     int _save_calibrate_paras()
     {
+        ifstream file;
+        file.open("../data/camera_paras.yml");
+        if(file) {
+            return 0;
+        }
+        cout<<"file doesn't exist"<<endl;
         cv::Mat outputImage;
         cv::namedWindow("Webcam", cv::WindowFlags::WINDOW_AUTOSIZE);
         std::vector<int> markerIds;
@@ -174,11 +182,15 @@ private:
             _cap >> _frame;
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
-            if (key == 13)
-            {
+
+            if (key == 13){
 
                 cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters,
                                          rejectedCandidates);
+                if (markerIds.empty())
+                {
+                    return -1;
+                }
                 cv::imshow("Webcam", _frame);
                 allCornersConcatenated.insert(
                         allCornersConcatenated.end(),
@@ -192,7 +204,7 @@ private:
                 );
                 markerCounterPerFrame.push_back((int)markerIds.size());
                 count++;
-
+            }
             if (count == VIEW_POINTS)
             {
                 break;
@@ -352,8 +364,8 @@ private:
 
         }
 
-        cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _print_board_rvec, _print_board_tvec, MARKER_SIZE);
-        cv::imshow("Webcam", _frame);
+        //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _print_board_rvec, _print_board_tvec, MARKER_SIZE);
+        //cv::imshow("Webcam", _frame);
         //std::cout << _board_rvec << std::endl;
         //std::cout <<  std::endl;
         //waitKey(1500);
@@ -428,7 +440,13 @@ public:
             return -1;
         }
         _create_board();
-        _save_calibrate_paras();
+
+        int flag = _save_calibrate_paras();
+        if (flag == -1)
+        {
+            std::cerr << "***Could not detect maekers***" << std::endl;
+            return -1;
+        }
         _read_calibrate_paras();
         return 0;
     }
