@@ -17,7 +17,7 @@ class tennis_manager::impl {
 private:
     BallStatus _ball = BallStatus(0, Transform(glm::mat4(1.0f)),
                                   Velocity(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0)), FlyingStatus::WAITING_START);
-    const glm::vec3 _player1_init_ball_pos = glm::vec3(0, 0.2f, 1.37f);
+    const glm::vec3 _player1_init_ball_pos = glm::vec3(0.0f, 0.05f, CONST_TABLE_SCALE.z/3);
     const glm::vec3 _player2_init_ball_pos = glm::vec3(0, 0.2f, -1.37f);
 
     int _server; // the one who should serve
@@ -90,18 +90,18 @@ private:
         glm::vec3 ball_scale = CONST_BALL_SCALE;
         switch (objClass) {
             case 0: // racket
-                model = model * glm::scale(glm::vec3(0.15f, 0.05f, 0.25f)) * glm::mat4(1.0f);
+                model = model * glm::scale(CONST_RACKET_SCALE);
                 break;
             case 1: // ball
-                model *= glm::scale(ball_scale);
+                model *= glm::scale(CONST_BALL_SCALE);
                 break;
             case 2: // table
-                table_scale.y = 0.025f;
+                table_scale.y = 0.01f;
                 model *= glm::scale(table_scale);
                 break;
             case 3: // net
                 table_scale.y *= 2;
-                table_scale.z = 0.025f;
+                table_scale.z = 0.01f;
                 model = model * glm::scale(table_scale);
                 break;
             default:
@@ -157,6 +157,7 @@ public:
             CollisionInfo ball_coll_table = checkCollisionSAT(ball2World, table2World);
             CollisionInfo ball_coll_net = checkCollisionSAT(ball2World, net2World);
             if (ball_coll_racketA.isValid || ball_coll_racketB.isValid) {
+                std::cout << "Hit racket!" << std::endl;
                 int player = ball_coll_racketA.isValid? 0: 1;
                 _turnOwner = player; // change current turn owner
                 CollisionInfo validColl = ball_coll_racketA.isValid? ball_coll_racketA: ball_coll_racketB;
@@ -165,12 +166,14 @@ public:
                     // serving
                     _isServed = true;
                     _isServingTurn = true;
+                    _gravity = true;
                 }
                 // TODO: racket ball collision handling
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
-                //glm::vec3 direction = validColl.normalWorld;
-                //_ball.set_velocity(direction * 10.0f);
+                glm::vec3 direction = validColl.normalWorld;
+                _ball.set_velocity(glm::vec3(direction.x, 2, -0.5));
             } else if (ball_coll_table.isValid) {
+                std::cout<< "Hit table" << std::endl;
                 glm::vec3 collisionPoint = ball_coll_table.collisionPointWorld;
                 _ball.set_status(FlyingStatus::HIT_WITH_TABLE);
                 if (_numHitTable == 1) {
@@ -204,6 +207,7 @@ public:
                 _numHitTable++;
             } else if (ball_coll_net.isValid) {
                 // to make it easy, if ball collide with net, fail
+                std::cout<< "Hit net" << std::endl ;
                 _ball.set_status(FlyingStatus::HIT_WITH_NET);
                 _endCurrentTurn(false);
             } else {
@@ -215,6 +219,7 @@ public:
                      (pos.z > table_scale.z / 2 + offset || pos.z < - (table_scale.z / 2 + offset)) ||
                      pos.y < -offset) {
                     // fly out of the boundary
+                    std::cout<< "Out of boundry" << std::endl;
                     _ball.set_status(FlyingStatus::OUT_OF_BOUND);
                     if (_numHitTable == 0 || (_numHitTable == 1 && _isServingTurn)) {
                         _endCurrentTurn(false);
@@ -250,6 +255,9 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+
+             _racket1Model = glm::mat4(glm::vec4(1, 0, 0, 0),glm::vec4(0, 0, 1, 0),glm::vec4(0, -1, 0, 0),glm::vec4(0, 0, 0, 1))
+                                  * _racket1Model;
             return 0;
         };
     }
@@ -258,11 +266,7 @@ public:
     {
         return [&](float* data) -> int
         {
-            _tableModel = _netModel = glm::mat4(
-                    glm::vec4(data[0], data[1], data[2], data[3]),
-                    glm::vec4(data[4], data[5], data[6], data[7]),
-                    glm::vec4(data[8], data[9], data[10], data[11]),
-                    glm::vec4(data[12], data[13], data[14], data[15]));
+            _tableModel = _netModel = glm::mat4(1.0f);
             return 0;
         };
     }
