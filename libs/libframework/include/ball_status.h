@@ -68,12 +68,27 @@ public:
         return this->pose.get_transform();
     }
 
+    inline FlyingStatus get_status() {
+        return this->flying_status;
+    }
+
+    inline void set_ball_id(unsigned id) {
+        this->ball_id = id;
+    }
+
     inline void set_position(glm::vec3 position) {
         this->pose.set_translation(position);
     }
 
+    inline void set_pose(Transform pose) {
+        this->pose = pose;
+    }
+
     inline void set_velocity(glm::vec3 velocity) {
-        this->velocity.set_linear(velocity);
+        Velocity vel;
+        vel.set_angular(glm::vec3(0.0f, 0.0f, 0.0f));
+        vel.set_linear(velocity);
+        this->velocity = vel;
     }
 
     inline void set_status(FlyingStatus status) {
