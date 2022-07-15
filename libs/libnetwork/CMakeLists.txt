@@ -73,6 +73,11 @@ add_library(${PROJECT_NAME}_protobuf
     ${PROTO_SRC_DIR}/network.pb.cc
 )
 
+target_link_libraries(
+    ${PROJECT_NAME}_protobuf
+    ${PROTOBUF_LIBRARIES}
+)
+
 # Set LIBS and use it to source libframework headers
 set(LIBS
     ${CMAKE_SOURCE_DIR}/libs
