@@ -18,7 +18,7 @@ using namespace std;
 #define RACKET_MARKER_ID 40
 #define MARKERS_NUM 3
 #define VIEW_POINTS 8
-#define MARKER_SIZE 0.05 // unit:meter
+#define MARKER_SIZE 0.025 // unit:meter
 #define MARKER_PIXEL 199
 #define STATES 12
 #define MEASURES 12
@@ -48,11 +48,12 @@ private:
         bool f_tvec = false;
         if ((abs(board_tvec.val[0] - past_board_tvec.val[0]) < 1e-3)&&(abs(board_tvec.val[1] - past_board_tvec.val[1]) < 1e-3)&&(abs(board_tvec.val[2] - past_board_tvec.val[2]) < 1e-3)){
             f_tvec = true;
+
         }
         if ((abs(board_rvec.val[0] - past_board_rvec.val[0]) < 1e-3)&&(abs(board_rvec.val[1] - past_board_rvec.val[1]) < 1e-3)&&(abs(board_rvec.val[2] - past_board_rvec.val[2]) < 1e-3)){
             f_rvec = true;
         }
-        return f_rvec && f_rvec;
+        return (f_rvec && f_rvec);
     }
     void _initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements, int nInputs)
     {
@@ -133,11 +134,17 @@ private:
         std::vector<std::vector<cv::Point3f>> objectPoints(3);
         markerImage = cv::imread("../data/marker.png");
         cv::aruco::detectMarkers(markerImage, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
+        float middle_x;
+        float middle_y;
+
+        middle_x = (markerCorners[1][0].x + markerCorners[1][1].x + markerCorners[1][2].x + markerCorners[1][3].x) / 4;
+        middle_y = (markerCorners[1][0].y + markerCorners[1][1].y + markerCorners[1][2].y + markerCorners[1][3].y) / 4;
+
         for (size_t i = 0; i < MARKERS_NUM; i++)
         {
             for (size_t j = 0; j < 4; j++)
             {
-                objectPoints[i].push_back(Point3f(markerCorners[i][j].x , markerCorners[i][j].y , 0.0));
+                objectPoints[i].push_back(Point3f(markerCorners[i][j].x - middle_x , markerCorners[i][j].y - middle_y , 0.0));
             }
         }
         _board = cv::aruco::Board::create(objectPoints, _dictionary, markerIds);
@@ -164,8 +171,7 @@ private:
             _cap >> _frame;
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
-            if (key == 13)
-            {
+
 
                 cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters, rejectedCandidates);
                 cv::imshow("Webcam", _frame);
@@ -181,7 +187,7 @@ private:
                 );
                 markerCounterPerFrame.push_back((int)markerIds.size());
                 count++;
-            }
+
             if (count == VIEW_POINTS)
             {
                 break;
@@ -267,14 +273,15 @@ private:
             std::cerr << "Estimation failed"<< std::endl;
             return -1;
         }
-        _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE;
-        _board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE;
-        _board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE;
-        //std::cout << _board_rvec << std::endl;
+        _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE *2;
+        _board_tvec.val[1] = _board_tvec.val[1] / MARKER_PIXEL * MARKER_SIZE *2;
+        _board_tvec.val[2] = _board_tvec.val[2] / MARKER_PIXEL * MARKER_SIZE *2;
+        //std::cout << _board_tvec << std::endl;
+        //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE);
         //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec, MARKER_SIZE);
         if (_found)
         {
-            if (_compare_vector(_board_rvec,_board_tvec,_Past_board_rvec,_Past_board_tvec)){
+            if (!(_compare_vector(_board_rvec,_board_tvec,_Past_board_rvec,_Past_board_tvec))){
                 _print_board_rvec = _board_rvec;
                 _print_board_tvec = _board_tvec;
             }
@@ -342,6 +349,7 @@ private:
         }
 
         cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, _print_board_rvec, _print_board_tvec, MARKER_SIZE);
+
         //std::cout << _board_rvec << std::endl;
         //std::cout <<  std::endl;
         //waitKey(1500);
@@ -350,15 +358,20 @@ private:
         cv::aruco::estimatePoseSingleMarkers(_markerCorners, MARKER_SIZE, _cameraMatrix, _distCoeffs, rvecs, tvecs);
         bool f_racket = false;
         cv::Matx31d t_rvec, t_tvec, srvec, stvec, inv_rvec, inv_tvec;
-
-
+        std::cout << "board" <<endl;
+        std::cout << _print_board_rvec <<endl;
+        std::cout << _print_board_tvec <<endl;
         for (size_t i = 0; i < _markerIds.size(); i++)
         {
-            //cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
-
+            rvecs[i] = _transPerspective(rvecs[i]);
+            std::cout << _markerIds[i] <<endl;
+            std::cout << rvecs[i] <<endl;
+            std::cout << tvecs[i] <<endl;
+            cv::drawFrameAxes(_frame, _cameraMatrix, _distCoeffs, rvecs[i], tvecs[i], MARKER_SIZE / 2);
+            cv::imshow("Webcam", _frame);
             if (_markerIds[i] == RACKET_MARKER_ID)
             {
-                rvecs[i] = _transPerspective(rvecs[i]);
+
                 srvec = rvecs[i];
                 stvec = tvecs[i];
                 f_racket = true;
@@ -377,13 +390,13 @@ private:
             _racket2cam = _fill_mat4(srvec, stvec);
 
 
-            //glm::mat3 rotM = glm::mat3(glm::vec3(_result[0]),
-            //glm::vec3(_result[1]);
-            //glm::vec3(_result[2]));
-            //glm::vec3 translation = glm::vec3(_result[3]);
-            //glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
-            //glm::vec3 transformedPos = rotM * marker_pos + translation;
-            //std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
+            glm::mat3 rotM = glm::mat3(glm::vec3(_racket2table[0]),
+            glm::vec3(_racket2table[1]),
+            glm::vec3(_racket2table[2]));
+            glm::vec3 translation = glm::vec3(_racket2table[3]);
+            glm::vec4  marker_pos = glm::vec4(0, 0, 0, 1);
+            glm::vec3 transformedPos = rotM * marker_pos + translation;
+            std::cout << "X" << transformedPos[0]  << "\t Y" << transformedPos[1]  << "\t Z" << transformedPos[2] << std::endl;
         }
 
         return 0;
@@ -433,9 +446,7 @@ public:
     int run_tick()
     {
 
-        double precTick = _ticks;
-        _ticks = (double) cv::getTickCount();
-        _dt = (_ticks - precTick) / cv::getTickFrequency();
+
         _cap >> _frame;
 
         if (_frame.empty())
