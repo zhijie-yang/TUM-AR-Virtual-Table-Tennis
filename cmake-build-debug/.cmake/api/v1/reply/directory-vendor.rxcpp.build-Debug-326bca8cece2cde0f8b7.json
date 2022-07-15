@@ -1,0 +1,86 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"vendor/rxcpp/projects/CMake/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 149,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 162,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 174,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include/rxcpp",
+			"paths" : 
+			[
+				{
+					"from" : "vendor/rxcpp/Rx/v2/src/rxcpp",
+					"to" : "."
+				}
+			],
+			"type" : "directory"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "share/rxcpp/cmake",
+			"exportName" : "rxcppConfig",
+			"exportTargets" : 
+			[
+				{
+					"id" : "rxcpp::@752a196eff0b9108b37b",
+					"index" : 0
+				}
+			],
+			"paths" : 
+			[
+				"vendor/rxcpp/build/CMakeFiles/Export/share/rxcpp/cmake/rxcppConfig.cmake"
+			],
+			"type" : "export"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "share/rxcpp/cmake",
+			"paths" : 
+			[
+				"cmake-build-debug/vendor/rxcpp/build/rxcppConfigVersion.cmake"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "vendor/rxcpp/build",
+		"source" : "vendor/rxcpp/projects/CMake"
+	}
+}
