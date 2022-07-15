@@ -34,6 +34,8 @@
 # Folders
 build/
 out/
+cmake/
+cmake-build-debug/
 .vs/
 .vscode/
 proto_src/
