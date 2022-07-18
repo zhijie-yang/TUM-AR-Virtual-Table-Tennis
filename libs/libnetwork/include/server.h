@@ -46,7 +46,7 @@ private:
     bool turn_owner = false; // 0/false for player A, 1/true for player B
     BallStatus ball_status;
     std::pair<RacketStatus, RacketStatus> racket_status;
-    ScoreBoard score_board;
+    ScoreBoard score_board = ScoreBoard(0, 0, 11);
     bool game_running = false;
 
 public:

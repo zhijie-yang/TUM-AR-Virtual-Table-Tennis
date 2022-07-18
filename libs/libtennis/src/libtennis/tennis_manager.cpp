@@ -117,6 +117,8 @@ public:
         ball.set_position(_player1_init_ball_pos);
 
         board.set_maximum_score(maximumScore);
+        board.set_player_1_score(0);
+        board.set_player_2_score(0);
 
         _ball = ball;
         _board = board;

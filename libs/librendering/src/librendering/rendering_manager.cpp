@@ -104,7 +104,7 @@ private:
     rendering_manager::scene _scene; /**< Current scene used in UI */
 
     bool _gameEnd = false; /**< Should the game end */
-    glm::vec3 table_translate; /**< Table translation offset */
+    // glm::vec3 table_translate; /**< Table translation offset */
 
 
 	char _input_player_name[256] = "Alice";
@@ -186,7 +186,7 @@ public:
 
             _racket1Model = transform * _racket1Model;
 
-            _racket1Model = glm::translate( table_translate) * _racket1Model;
+            // _racket1Model = glm::translate( table_translate) * _racket1Model;
 
             return 0;
         };
@@ -205,7 +205,7 @@ public:
             glm::vec3 translate = glm::vec3(_ballModel[3]);
             _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f));
             _ballModel = glm::translate( translate) * _ballModel;
-            _ballModel = glm::translate( table_translate) * _ballModel;
+            // _ballModel = glm::translate( table_translate) * _ballModel;
 
 
             return 0;
@@ -225,7 +225,8 @@ public:
             _tableModel = glm::scale(table_scale) * _tableModel;
             _tableModel = glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
             _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * _tableModel;
-            _tableModel = glm::translate( glm::vec3(0, -_view[3][1], 0)) * _tableModel;
+            // _tableModel = glm::rotate(glm::pi<float>()/2.f, glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
+            // _tableModel = glm::translate( glm::vec3(0, -_view[3][1], 0)) * _tableModel;
 
             glm::vec3 scale;
             glm::quat rotation;
@@ -233,7 +234,7 @@ public:
             glm::vec3 skew;
             glm::vec4 perspective;
             glm::decompose(_tableModel, scale, rotation, translation, skew, perspective);
-            table_translate = translation;
+            // table_translate = translation;
 
             return 0;
         };
@@ -257,11 +258,14 @@ public:
     {
         return [&](float* data) -> int
         {
-            glm::mat4 intrinsics = glm::mat4(
+            _proj = glm::mat4(
                     glm::vec4(data[0], data[1], data[2], data[3]),
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+
+            _proj = glm::perspective(2 * glm::atan(data[9]/data[5]),
+                    (float)_settings.window_width / (float)_settings.window_height, 0.1f, 100.0f);
 
             return 0;
         };
@@ -521,18 +525,45 @@ public:
                 {
                     view = _view;
                 }
+
+                float fx = _proj[0][0];
+                float fy = _proj[1][1];
+                float s = 0.0;
+                float cx = _proj[2][0];
+                float cy = _proj[2][1];
+                float zmin = 0.0;
+                float zmax = 10.0;
+                // TODO change W and H
+                float W = fx * 2;
+                float H = fy * 2;
+                glm::mat4 presp({2*fx/W,0,0,0,2*s/W,2*fy/H,0,0,1-2*(cx/W),1-2*(cy/H),(zmax+zmin)/(zmax-zmin),1,0,0,2*zmax*zmin/(zmin-zmax),0});
+
                 ourShader->setMat4("projection", _proj);
-                ourShader->setMat4("view", view);
+                // ourShader->setMat4("view", view);
 
                 // render the loaded models
                 ourShader->setMat4("model", _ballModel);
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
                 _racketObject->Draw(*ourShader);
-                //ourShader->setMat4("model", _racket2Model);
-                //_racketObject->Draw(*ourShader);
 
                 ourShader->setMat4("model", _tableModel);
+
+                // glm::vec3 translation = _view[3];
+                // glm::mat3 rotm = glm::mat3(glm::vec3(_view[0]),
+                                        // glm::vec3(_view[1]),
+                                        // glm::vec3(_view[2]));
+                // glm::mat3 rotmInverse = glm::transpose(rotm);
+                // glm::vec3 transInverse = - rotmInverse * translation;
+                // auto inv_view = glm::mat4(glm::vec4(rotmInverse[0], 0),
+                //                     glm::vec4(rotmInverse[1], 0),
+                //                     glm::vec4(rotmInverse[2], 0),
+                //                     glm::vec4(transInverse, 1));
+                // std::cout << glm::to_string(inv_view * _tableModel * glm::vec4(0, 0, 0, 1)) << std::endl;
+                // auto uv = _proj * _view * _tableModel * glm::vec4(0, 0, 0, 1);
+                // std::cout << glm::to_string(uv) << std::endl;
+                // std::cout << glm::to_string(_proj) << std::endl;
+                ourShader->setMat4("view", _view);
                 _tableObject->Draw(*ourShader);
             });
 
@@ -728,13 +759,13 @@ public:
                         if (ImGui::InputInt("Port", &_port)) {}
                         if (ImGui::InputText("Name", _input_player_name, 256)) {}
 
-                        // if (ImGui::Button("Host", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
-                        //     scene_set(rendering_manager::scene::level);
-                        //     // TODO: start a server
+                        if (ImGui::Button("Offline", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
+                            scene_set(rendering_manager::scene::level);
+                            // TODO: start a server
 
-                        //     // TODO: call client.connectServer
-                        // }
-                        // ImGui::SameLine();
+                            // TODO: call client.connectServer
+                        }
+                        ImGui::SameLine();
                         if (ImGui::Button("Join", ImVec2(buttonWidth / 2.f - padding, buttonHeight))) {
                             scene_set(rendering_manager::scene::waiting_p2);
                             // TODO: call client.connectServer
