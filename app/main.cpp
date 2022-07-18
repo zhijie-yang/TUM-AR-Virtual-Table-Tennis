@@ -140,7 +140,6 @@ int main(int, char **) {
 				g_tennis_client->onTennisTickEnd(bs, sb, is_turn_owner);
 			}
 
-            tennis.ball_serialize(rendering.ball_deserialize());
             tennis.game_status_serialize(rendering.game_status_deserialize());
 		}
 
@@ -153,7 +152,7 @@ int main(int, char **) {
             unsigned isTurnOwner;
             g_tennis_client->RenderingTickBegin(g_tennis_client->get_player_id(), opponent_rs, bs, sb, isTurnOwner);
             rendering.racket2_deserialize()((float*) (opponent_rs.get_pose().get_value_ptr()));
-            rendering.ball_deserialize()((float*) (bs.get_pose().get_value_ptr()));
+            rendering.ball_deserialize(isTurnOwner)((float*) (bs.get_pose().get_value_ptr()));
             rendering.score1_deserialize()(sb.get_player_1_score());
             rendering.score2_deserialize()(sb.get_player_2_score());
         }

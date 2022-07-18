@@ -197,7 +197,7 @@ public:
         };
     }
 
-    std::function<int(float*)> ball_deserialize()
+    std::function<int(float*)> ball_deserialize(bool isTurnOwner)
     {
         return [&](float* data) -> int
         {
@@ -207,13 +207,22 @@ public:
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
 
-            // glm::vec3 translate = glm::vec3(_ballModel[3]);
+            auto axis_reverse = glm::mat4(glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f),
+                                          glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+                                          glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
+                                          glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            if (!isTurnOwner) {
+                _ballModel = axis_reverse * _ballModel;
+            }
+
             auto axis_permute = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
                             glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
                             glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
                             glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
             _ballModel = axis_permute * _ballModel;
+
+
             // _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f)) * _ballModel;
             // _ballModel = glm::translate( translate) * _ballModel;
             // _ballModel =  _ballModel;
@@ -1052,9 +1061,9 @@ std::function<int(float*)>rendering_manager::view_deserialize()
     return _impl->view_deserialize();
 }
 
-std::function<int(float*)> rendering_manager::ball_deserialize()
+std::function<int(float*)> rendering_manager::ball_deserialize(bool isTurnOwner)
 {
-    return _impl->ball_deserialize();
+    return _impl->ball_deserialize(isTurnOwner);
 }
 
 std::function<int(float*)> rendering_manager::racket1_deserialize()

@@ -16,7 +16,7 @@ class tennis_manager::impl {
 private:
     BallStatus _ball = BallStatus(0, Transform(glm::mat4(1.0f)),
                                   Velocity(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0)), FlyingStatus::WAITING_START);
-    const glm::vec3 _player1_init_ball_pos = glm::vec3(0.0f, 0.05f, 0.3f);
+    const glm::vec3 _player1_init_ball_pos = glm::vec3(0.0f, 0.06f, 0.33f);
     const glm::vec3 _player2_init_ball_pos = glm::vec3(0, 0.2f, -1.37f);
 
     bool _isTurnOwner;
@@ -29,7 +29,7 @@ private:
     float _timestep;
 
     bool _isServingTurn = false;      //if serve current turn
-    bool _gravity = false;            //if apply gravity when moving
+    bool _gravity = true;            //if apply gravity when moving
     bool _airResistance= false;       //if apply air Resistance when moving
     bool _gameEnd = false;            //if the game is ended
 
@@ -40,7 +40,7 @@ private:
         if (_ball.get_status() != WAITING_START) {
             // Apply gravity
             if (_gravity) {
-                force += glm::vec3(0, -9.8 * CONST_BALL_MASS, 0);
+                force += glm::vec3(0, -9.8 / 2 * CONST_BALL_MASS, 0);
             }
             // Apply air resistance
             if (_airResistance) {
@@ -109,7 +109,7 @@ private:
 
 public:
     impl(int maximumScore) :
-            _isServingTurn{false}, _isTurnOwner{false}, _numHitTable{0}
+            _isServingTurn{false}, _isTurnOwner{true}, _numHitTable{0}
     {
         ScoreBoard board;
         BallStatus ball = BallStatus(0, Transform(glm::mat4(1.0f)),
@@ -133,6 +133,13 @@ public:
 
     int run_tick() {
         float timestep = _timestep / 4;
+
+        // TODO: delete, for debug
+        if (_isTurnOwner) {
+            std::cout << "I'm turn owner" << std::endl;
+        }
+
+
         for (int i = 0; i < 4; i++) {
             // if the player is serving
             if (_isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
@@ -140,7 +147,6 @@ public:
                 _ball.set_velocity(glm::vec3(0, 0, 0));
             }
 
-            glm::mat4 racket2World = _obj2World(_racket1Model, 0);
             glm::mat4 table2World = _obj2World(_tableModel, 2);
             glm::mat4 net2World = _obj2World(_netModel, 3);
 
@@ -163,17 +169,18 @@ public:
 
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
                 glm::vec3 direction = ball_coll_racket.normalWorld;
-                _ball.set_velocity(glm::vec3(direction.x, 2, -0.5));
+                _ball.set_velocity(glm::vec3(direction.x, direction.y, direction.z));
+                //std::cout << "vec: " << direction.x << " " << direction.y << " " << direction.z << std::endl;
             } else if (ball_coll_racket.isValid && _isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
                 //serve the ball
                 std::cout << "Turn owner serve ball!" << std::endl;
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
                 _isServingTurn = true;
-                _gravity = true;
 
                 glm::vec3 direction = ball_coll_racket.normalWorld;
-                _ball.set_velocity(glm::vec3(direction.x, 2, -0.5));
-            } else if (ball_coll_table.isValid && _isTurnOwner) {
+                _ball.set_velocity(glm::vec3(direction.x, direction.y, direction.z));
+                std::cout << "vec: " << direction.x << " " << direction.y << " " << direction.z << std::endl;
+            } else if (ball_coll_table.isValid && _isTurnOwner && _ball.get_status() != FlyingStatus::WAITING_START) {
                     std::cout<< "Hit table" << std::endl;
                     glm::vec3 collisionPoint = ball_coll_table.collisionPointWorld;
                     _ball.set_status(FlyingStatus::HIT_WITH_TABLE);
@@ -206,12 +213,12 @@ public:
                         _endCurrentTurn(true);
                     }
                     _numHitTable++;
-            } else if (ball_coll_net.isValid && _isTurnOwner) {
+            } else if (ball_coll_net.isValid && _isTurnOwner && _ball.get_status() != FlyingStatus::WAITING_START) {
                 // to make it easy, if ball collide with net, fail
                 std::cout<< "Hit net" << std::endl ;
                 _ball.set_status(FlyingStatus::HIT_WITH_NET);
                 _endCurrentTurn(false);
-            } else {
+            } else if (_ball.get_status() != FlyingStatus::WAITING_START) {
                 // is ball flying out of boundary?
                 _ball.set_status(FlyingStatus::FLYING);
                 if (_isTurnOwner) {
@@ -247,6 +254,8 @@ public:
         ball.set_status(_ball.get_status());
 
         board = _board;
+
+        isTurnOwner = _isTurnOwner;
     }
 
     std::function<int(float*)> racket1_deserialize()

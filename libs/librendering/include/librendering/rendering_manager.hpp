@@ -97,7 +97,7 @@ namespace librendering {
 		* Get a function which deserializes the ball transformation matrix.
 		* Accepts matrix array pointer.
 		*/
-        std::function<int(float*)> ball_deserialize();
+        std::function<int(float*)> ball_deserialize(bool isTurnOwner);
 		/**
 		* Get a function which deserializes the table scale/transformation matrix.
 		* Accepts matrix array pointer.
