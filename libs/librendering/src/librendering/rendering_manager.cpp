@@ -165,6 +165,25 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+
+            glm::mat4 transform = glm::mat4(glm::vec4(1, 0, 0, 0),glm::vec4(0, 0, 1, 0),glm::vec4(0, -1, 0, 0),glm::vec4(0, 0, 0, 1))
+                                  * _racket2Model;
+            _racket2Model = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f));
+            _racket2Model = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _racket2Model;
+
+            _racket2Model = transform * _racket2Model;
+
+            _racket2Model = glm::translate( table_translate) * _racket2Model;
+
+            // reverse x and z
+            glm::mat4 reverse = glm::mat4(
+                    glm::vec4(-1, 0, 0, 0),
+                    glm::vec4(0, 1, 0 , 0),
+                    glm::vec4(0, 0, -1, 0),
+                    glm::vec4(0, 0, 0, 1)
+                    );
+            _racket2Model = reverse * _racket2Model;
+
             return 0;
         };
     }
@@ -529,8 +548,8 @@ public:
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
                 _racketObject->Draw(*ourShader);
-                //ourShader->setMat4("model", _racket2Model);
-                //_racketObject->Draw(*ourShader);
+                ourShader->setMat4("model", _racket2Model);
+                _racketObject->Draw(*ourShader);
 
                 ourShader->setMat4("model", _tableModel);
                 _tableObject->Draw(*ourShader);
