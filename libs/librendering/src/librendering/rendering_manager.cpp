@@ -69,6 +69,7 @@ private:
     glm::mat4 _tableModel; /**< Table scale/transformation matrix */
     glm::mat4 _view; /**< Camera view matrix */
     glm::mat4 _proj; /**< Camera projection matrix */
+    glm::mat4 _inv_view;
 
     std::unique_ptr<Model> _ballObject; /**< Ball 3d model */
     std::unique_ptr<Model> _racketObject; /**< Racket 3d model */
@@ -178,15 +179,10 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
-
-            // glm::mat4 transform = glm::mat4(glm::vec4(1, 0, 0, 0),glm::vec4(0, 0, 1, 0),glm::vec4(0, -1, 0, 0),glm::vec4(0, 0, 0, 1))
-            //                 * _racket1Model;
-            _racket1Model = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f)) * _racket1Model;
-            _racket1Model = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _racket1Model;
-
-            // _racket1Model = transform * _racket1Model;
-
-            // _racket1Model = glm::translate( table_translate) * _racket1Model;
+            // _racket1Model = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f)) * _racket1Model;
+            // _racket1Model = glm::rotate(glm::pi<float>(), glm::vec3(0.0f, 0.0f, 0.0f)) * _racket1Model;
+            // glm::mat4 racket1_transform = glm::mat4(glm::vec4(-1, 0, 0, 0),glm::vec4(0, 1, 0, 0),glm::vec4(0, 0, 1, 0),glm::vec4(0, 0, 0, 1));
+            // _racket1Model = racket1_transform * _racket1Model;
 
             return 0;
         };
@@ -203,7 +199,9 @@ public:
                     glm::vec4(data[12], data[13], data[14], data[15]));
 
             glm::vec3 translate = glm::vec3(_ballModel[3]);
-            _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f));
+            // _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f)) * _ballModel;
+            // _ballModel = glm::translate( translate) * _ballModel;
+            // _ballModel =  _ballModel;
             // _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
 
             return 0;
@@ -235,6 +233,23 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+
+            glm::vec3 translation = _view[3];
+            glm::mat3 rotm = glm::mat3(glm::vec3(_view[0]),
+                                    glm::vec3(_view[1]),
+                                    glm::vec3(_view[2]));
+            glm::mat3 rotmInverse = glm::transpose(rotm);
+            glm::vec3 transInverse = - rotmInverse * translation;
+            auto inv_view = glm::mat4(glm::vec4(rotmInverse[0], 0),
+                                glm::vec4(rotmInverse[1], 0),
+                                glm::vec4(rotmInverse[2], 0),
+                                glm::vec4(transInverse, 1));
+            auto axis_permute = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+                            glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
+                            glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
+                            glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+            _inv_view = axis_permute * inv_view;
 
             return 0;
         };
@@ -514,28 +529,12 @@ public:
 
                 // render the loaded models
                 ourShader->setMat4("projection", _proj);
-                glm::vec3 translation = _view[3];
-                glm::mat3 rotm = glm::mat3(glm::vec3(_view[0]),
-                                        glm::vec3(_view[1]),
-                                        glm::vec3(_view[2]));
-                glm::mat3 rotmInverse = glm::transpose(rotm);
-                glm::vec3 transInverse = - rotmInverse * translation;
-                auto inv_view = glm::mat4(glm::vec4(rotmInverse[0], 0),
-                                    glm::vec4(rotmInverse[1], 0),
-                                    glm::vec4(rotmInverse[2], 0),
-                                    glm::vec4(transInverse, 1));
-                auto axis_permute = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-                                glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-                                glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
-                                glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-                inv_view = axis_permute * inv_view;
-                std::cout << glm::to_string(_view * _tableModel * glm::vec4(0, 0, 0, 1)) << std::endl;
-                auto uv = _proj * _view * _tableModel * glm::vec4(0, 0, 0, 1);
-                std::cout << glm::to_string(uv) << std::endl;
-                std::cout << "==========" << std::endl;
-                ourShader->setMat4("view", inv_view);        
-                ourShader->setMat4("model", _tableModel); 
+                // std::cout << glm::to_string(_view * _tableModel * glm::vec4(0, 0, 0, 1)) << std::endl;
+                // auto uv = _proj * _view * _tableModel * glm::vec4(0, 0, 0, 1);
+                // std::cout << glm::to_string(uv) << std::endl;
+                // std::cout << "==========" << std::endl;
+                ourShader->setMat4("view", _inv_view);
+                ourShader->setMat4("model", _tableModel);
                 _tableObject->Draw(*ourShader);
                 ourShader->setMat4("model", _ballModel);
                 _ballObject->Draw(*ourShader);

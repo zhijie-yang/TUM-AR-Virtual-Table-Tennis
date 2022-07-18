@@ -21,6 +21,7 @@ namespace libvision {
 		int capture_height_get() const;
 
 		int capture_serialize(const std::function<int(void*, int, int, int)>& processor);
+		int racket1_2cam_serialize(const std::function<int(float *)> &processor);
         int racket1_serialize(const std::function<int(float*)>& processor);
         int racket2_serialize(const std::function<int(float*)>& processor);
         int table_serialize(const std::function<int(float*)>& processor);

@@ -16,7 +16,7 @@ class tennis_manager::impl {
 private:
     BallStatus _ball = BallStatus(0, Transform(glm::mat4(1.0f)),
                                   Velocity(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0)), FlyingStatus::WAITING_START);
-    const glm::vec3 _player1_init_ball_pos = glm::vec3(0.0f, 0.05f, CONST_TABLE_SCALE.z/3);
+    const glm::vec3 _player1_init_ball_pos = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 _player2_init_ball_pos = glm::vec3(0, 0.2f, -1.37f);
 
     bool _isTurnOwner;

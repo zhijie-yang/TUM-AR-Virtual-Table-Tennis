@@ -115,7 +115,8 @@ int main(int, char **) {
             vision.capture_serialize(rendering.capture_deserialize());
             vision.view_serialize(rendering.view_deserialize());
             vision.table_serialize(rendering.table_deserialize());
-            vision.racket1_serialize(rendering.racket1_deserialize());
+            vision.racket1_2cam_serialize(rendering.racket1_deserialize());
+            // vision.racket1_serialize(rendering.racket1_deserialize());
             //vision.racket2_serialize(rendering.racket2_deserialize());
 
             vision.racket1_serialize(tennis.racket1_deserialize());
