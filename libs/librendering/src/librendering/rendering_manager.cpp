@@ -198,7 +198,13 @@ public:
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
 
-            glm::vec3 translate = glm::vec3(_ballModel[3]);
+            // glm::vec3 translate = glm::vec3(_ballModel[3]);
+            auto axis_permute = glm::mat4(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+                            glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
+                            glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+                            glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+            _ballModel = axis_permute * _ballModel;
             // _ballModel = glm::scale(glm::vec3(0.25f, 0.25f, 0.25f)) * _ballModel;
             // _ballModel = glm::translate( translate) * _ballModel;
             // _ballModel =  _ballModel;
@@ -212,12 +218,12 @@ public:
     {
         return [&](float* data) -> int
         {
-            glm::vec3 table_scale = CONST_TABLE_SCALE;
-            float net_height = table_scale.y;
-            table_scale.y = table_scale.z;
-            table_scale.z = net_height;
+            // glm::vec3 table_scale = CONST_TABLE_SCALE;
+            // float net_height = table_scale.y;
+            // table_scale.y = table_scale.z;
+            // table_scale.z = net_height;
             _tableModel = glm::mat4(1.0f);
-            _tableModel = glm::scale(table_scale) * _tableModel;
+            // _tableModel = glm::scale(table_scale) * _tableModel;
             _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
 
             return 0;
@@ -535,10 +541,13 @@ public:
                 // std::cout << "==========" << std::endl;
                 ourShader->setMat4("view", _inv_view);
                 ourShader->setMat4("model", _tableModel);
+                ourShader->setMat4("scale", CONST_TABLE_RENDER_SCALE);
                 _tableObject->Draw(*ourShader);
                 ourShader->setMat4("model", _ballModel);
+                ourShader->setMat4("scale", CONST_BALL_RENDER_SCALE);
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
+                ourShader->setMat4("scale", CONST_BALL_RENDER_SCALE);
                 _racketObject->Draw(*ourShader);
             });
 
