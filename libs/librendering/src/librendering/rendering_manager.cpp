@@ -166,6 +166,15 @@ public:
                     glm::vec4(data[4], data[5], data[6], data[7]),
                     glm::vec4(data[8], data[9], data[10], data[11]),
                     glm::vec4(data[12], data[13], data[14], data[15]));
+
+            glm::mat4 axis_reverse = glm::mat4(
+                    glm::vec4(-1, 0, 0, 0),
+                    glm::vec4(0, -1, 0 , 0),
+                    glm::vec4(0, 0, 1, 0),
+                    glm::vec4(0, 0, 0, 1)
+            );
+            _racket2Model = axis_reverse * _racket2Model;
+
             return 0;
         };
     }
@@ -547,7 +556,10 @@ public:
                 ourShader->setMat4("scale", CONST_BALL_RENDER_SCALE);
                 _ballObject->Draw(*ourShader);
                 ourShader->setMat4("model", _racket1Model);
-                ourShader->setMat4("scale", CONST_BALL_RENDER_SCALE);
+                ourShader->setMat4("scale", CONST_RACKET_RENDER_SCALE);
+                _racketObject->Draw(*ourShader);
+                ourShader->setMat4("model", _racket2Model);
+                ourShader->setMat4("scale", CONST_RACKET_RENDER_SCALE);
                 _racketObject->Draw(*ourShader);
             });
 
