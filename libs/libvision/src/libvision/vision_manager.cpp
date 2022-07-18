@@ -23,7 +23,7 @@ using namespace std;
 #define RACKET_MARKER_ID 40
 #define MARKERS_NUM 3
 #define VIEW_POINTS 8
-#define MARKER_SIZE 0.07 // unit:meter
+#define MARKER_SIZE 0.035 // unit:meter
 #define MARKER_PIXEL 199
 #define STATES 12
 #define MEASURES 12

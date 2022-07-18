@@ -23,7 +23,7 @@ librendering::rendering_manager::scene curr_scene = librendering::rendering_mana
 int main(int, char **) {
 	vision_manager vision;
 	vision_settings vsettings;
-	vsettings.camera_id = 0;
+	vsettings.camera_id = 2;
 
 	if (vision.init(vsettings)) {
 		cerr << "Failed to init vision.\n";
@@ -116,7 +116,7 @@ int main(int, char **) {
             vision.view_serialize(rendering.view_deserialize());
             vision.table_serialize(rendering.table_deserialize());
             vision.racket1_serialize(rendering.racket1_deserialize());
-            vision.racket2_serialize(rendering.racket2_deserialize());
+            //vision.racket2_serialize(rendering.racket2_deserialize());
 
             vision.racket1_serialize(tennis.racket1_deserialize());
             vision.table_serialize(tennis.table_deserialize());
@@ -145,13 +145,17 @@ int main(int, char **) {
 
         // TODO: only the turn owner send latest ball status to server
         // TODO: each user should send racket status
-		BallStatus bs;
-		ScoreBoard sb;
-		RacketStatus opponent_rs;
-		rendering.racket2_deserialize()((float*) (opponent_rs.get_pose().get_value_ptr()));
-		rendering.ball_deserialize()((float*) (bs.get_pose().get_value_ptr()));
-		rendering.score1_deserialize()(sb.get_player_1_score());
-		rendering.score2_deserialize()(sb.get_player_2_score());
+        if (g_tennis_client && g_tennis_client->is_connected()) {
+            BallStatus bs;
+            ScoreBoard sb;
+            RacketStatus opponent_rs;
+            unsigned isTurnOwner;
+            g_tennis_client->RenderingTickBegin(g_tennis_client->get_player_id(), opponent_rs, bs, sb, isTurnOwner);
+            rendering.racket2_deserialize()((float*) (opponent_rs.get_pose().get_value_ptr()));
+            rendering.ball_deserialize()((float*) (bs.get_pose().get_value_ptr()));
+            rendering.score1_deserialize()(sb.get_player_1_score());
+            rendering.score2_deserialize()(sb.get_player_2_score());
+        }
 		if (rendering.run_tick()) {
 			cerr << "Failed to run tick rendering.\n";
 			break;
