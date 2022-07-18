@@ -109,7 +109,7 @@ private:
 
 public:
     impl(int maximumScore) :
-            _isServingTurn{false}, _isTurnOwner{true}, _numHitTable{0}
+            _isServingTurn{false}, _isTurnOwner{false}, _numHitTable{0}
     {
         ScoreBoard board;
         BallStatus ball = BallStatus(0, Transform(glm::mat4(1.0f)),
@@ -134,12 +134,6 @@ public:
     int run_tick() {
         float timestep = _timestep / 4;
 
-        // TODO: delete, for debug
-        if (_isTurnOwner) {
-            std::cout << "I'm turn owner" << std::endl;
-        }
-
-
         for (int i = 0; i < 4; i++) {
             // if the player is serving
             if (_isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
@@ -147,6 +141,7 @@ public:
                 _ball.set_velocity(glm::vec3(0, 0, 0));
             }
 
+            glm::mat4 racket2World = _obj2World(_racket1Model, 0);
             glm::mat4 table2World = _obj2World(_tableModel, 2);
             glm::mat4 net2World = _obj2World(_netModel, 3);
 
@@ -157,6 +152,9 @@ public:
             glm::vec3 acc = force / float(CONST_BALL_MASS);
             _ball.set_velocity(_ball.get_velocity() + timestep * acc);
             _ball.set_position(_ball.get_position() + timestep * _ball.get_velocity());
+
+            glm::vec3 test = _ball.get_position();
+            std::cout << test.x << " " << test.y << " " << test.z << std::endl;
             //detect collision
             glm::mat4 ball2World = _obj2World(_ball.get_pose().get_transform(), 1);
             CollisionInfo ball_coll_racket = checkCollisionSAT(ball2World, racket2World);
@@ -256,6 +254,10 @@ public:
         board = _board;
 
         isTurnOwner = _isTurnOwner;
+    }
+
+    void turnOwner_deserialize(bool isTurnOwner) {
+        _isTurnOwner = isTurnOwner;
     }
 
     std::function<int(float*)> racket1_deserialize()
@@ -359,4 +361,8 @@ int tennis_manager::game_status_serialize(const std::function<int(bool)>& proces
 
 void tennis_manager::simulation_serialize(BallStatus &ball, ScoreBoard &board, bool &isTurnOwner) {
     return _impl->simulation_serialize(ball, board, isTurnOwner);
+}
+
+void tennis_manager::turnOwner_deserialize(bool isTurnOwner) {
+    return _impl->turnOwner_deserialize(isTurnOwner);
 }

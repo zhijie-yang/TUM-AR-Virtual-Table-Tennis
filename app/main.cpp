@@ -122,12 +122,15 @@ int main(int, char **) {
             vision.racket1_serialize(tennis.racket1_deserialize());
             vision.table_serialize(tennis.table_deserialize());
 
-            if (tennis.run_tick()) {
-                cerr << "Failed to run tick tennis.\n";
-                break;
-            }
-
 			if (g_tennis_client && g_tennis_client->is_connected()) {
+                bool isCurrentTurnOwner = g_tennis_client->getCurrentTurn();
+                tennis.turnOwner_deserialize(isCurrentTurnOwner);
+
+                if (tennis.run_tick()) {
+                    cerr << "Failed to run tick tennis.\n";
+                    break;
+                }
+
 				BallStatus bs;
 				ScoreBoard sb;
 				bool is_turn_owner;

@@ -152,6 +152,7 @@ GeneralResponse VirtualTennisNetworkClient::changeTurn() {
 unsigned VirtualTennisNetworkClient::getCurrentTurn() {
     grpc::ClientContext context;
     libnetwork::CurrentTurnRequest request;
+    request.set_player_id(this->player_id);
     libnetwork::CurrentTurnResponse response;
     grpc::Status status = stub_->GetCurrentTurn(&context, request, &response);
     unsigned _response;

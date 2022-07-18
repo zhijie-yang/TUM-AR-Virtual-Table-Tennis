@@ -124,7 +124,7 @@ class ConnectionServiceImpl final : public libnetwork::VirtualTennis::Service {
     grpc::Status GetCurrentTurn(grpc::ServerContext* context, const libnetwork::CurrentTurnRequest* request,
                 libnetwork::CurrentTurnResponse* response) override {
                     auto manager = TennisServerManager::get_instance();
-                    response->set_turn_owner(manager->get_turn_owner());
+                    response->set_turn_owner(manager->get_turn_owner() == manager->get_player_pos(request->player_id()));
                     return grpc::Status::OK;
                 }
 
