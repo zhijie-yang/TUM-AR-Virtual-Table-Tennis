@@ -223,7 +223,7 @@ public:
             _tableModel = glm::mat4(1.0f);
 
             _tableModel = glm::scale(table_scale) * _tableModel;
-            _tableModel = glm::rotate(glm::pi<float>() / -2.f, glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
+            _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
             _tableModel = glm::rotate(glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) * _tableModel;
             // _tableModel = glm::rotate(glm::pi<float>()/2.f, glm::vec3(1.0f, 0.0f, 0.0f)) * _tableModel;
             // _tableModel = glm::translate( glm::vec3(0, -_view[3][1], 0)) * _tableModel;

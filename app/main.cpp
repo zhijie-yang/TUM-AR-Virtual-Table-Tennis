@@ -23,7 +23,7 @@ librendering::rendering_manager::scene curr_scene = librendering::rendering_mana
 int main(int, char **) {
 	vision_manager vision;
 	vision_settings vsettings;
-	vsettings.camera_id = 2;
+	vsettings.camera_id = 0;
 
 	if (vision.init(vsettings)) {
 		cerr << "Failed to init vision.\n";

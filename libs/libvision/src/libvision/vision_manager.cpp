@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/types_c.h>
+#include <iostream>
 #include <opencv2/video/tracking.hpp>
 #include <cmath>
 #include <fstream>
@@ -20,7 +21,7 @@ using namespace std;
 #define RACKET_MARKER_ID 40
 #define MARKERS_NUM 3
 #define VIEW_POINTS 8
-#define MARKER_SIZE 0.035 // unit:meter
+#define MARKER_SIZE 0.07 // unit:meter
 #define MARKER_PIXEL 199
 #define STATES 12
 #define MEASURES 12
@@ -183,6 +184,8 @@ private:
             cv::imshow("Webcam", _frame);
             int key = waitKey(1500);
 
+            if (key == 13){
+
                 cv::aruco::detectMarkers(_frame, _dictionary, markerCorners, markerIds, _parameters,
                                          rejectedCandidates);
                 if (markerIds.empty())
@@ -272,7 +275,7 @@ private:
         cv::aruco::detectMarkers(_frame, _dictionary, _markerCorners, _markerIds, _parameters, _rejectedCandidates);
         if (_markerIds.size() == 0)
         {
-            // std::cerr << "Failed to detect markers"<< std::endl;
+            std::cerr << "Failed to detect markers"<< std::endl;
             return -1;
         }
 
@@ -284,7 +287,7 @@ private:
         int valid = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, _board, _cameraMatrix, _distCoeffs, _board_rvec, _board_tvec);
         if (valid == 0)
         {
-            // std::cerr << "Estimation failed"<< std::endl;
+            std::cerr << "Estimation failed"<< std::endl;
             return -1;
         }
         _board_tvec.val[0] = _board_tvec.val[0] / MARKER_PIXEL * MARKER_SIZE *2;
@@ -460,7 +463,6 @@ public:
         }
         _detect_markers();
         _estimate_position();
-        
         return 0;
     }
 
@@ -535,7 +537,7 @@ public:
                 _proj[3][0], _proj[3][1], _proj[3][2], _proj[3][3]};
         return processor(arr_model);
     }
-    
+
     glm::mat4 racket2table()
     {
         return _racket2table;
