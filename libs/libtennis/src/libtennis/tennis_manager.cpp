@@ -62,10 +62,14 @@ private:
 
         // Only turn owner check
         if (win) {
+            std::cout << "win" << std::endl;
             _board.set_player_1_score(_board.get_player_1_score() + 1);
         } else {
             _board.set_player_2_score(_board.get_player_2_score() + 1);
+            std::cout << "lose" << std::endl;
         }
+        // Whether win or not is always determine by turn owner. After each score update, change the turn owner. (So he will serve the next ball)
+        _isTurnOwner = false;
 
         bool gameEnd = _check_game_end();
         if (gameEnd) {
@@ -154,7 +158,6 @@ public:
             _ball.set_position(_ball.get_position() + timestep * _ball.get_velocity());
 
             glm::vec3 test = _ball.get_position();
-            std::cout << test.x << " " << test.y << " " << test.z << std::endl;
             //detect collision
             glm::mat4 ball2World = _obj2World(_ball.get_pose().get_transform(), 1);
             CollisionInfo ball_coll_racket = checkCollisionSAT(ball2World, racket2World);
@@ -168,7 +171,6 @@ public:
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
                 glm::vec3 direction = ball_coll_racket.normalWorld;
                 _ball.set_velocity(glm::vec3(direction.x, direction.y, direction.z));
-                //std::cout << "vec: " << direction.x << " " << direction.y << " " << direction.z << std::endl;
             } else if (ball_coll_racket.isValid && _isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
                 //serve the ball
                 std::cout << "Turn owner serve ball!" << std::endl;
@@ -177,7 +179,6 @@ public:
 
                 glm::vec3 direction = ball_coll_racket.normalWorld;
                 _ball.set_velocity(glm::vec3(direction.x, direction.y, direction.z));
-                std::cout << "vec: " << direction.x << " " << direction.y << " " << direction.z << std::endl;
             } else if (ball_coll_table.isValid && _isTurnOwner && _ball.get_status() != FlyingStatus::WAITING_START) {
                     std::cout<< "Hit table" << std::endl;
                     glm::vec3 collisionPoint = ball_coll_table.collisionPointWorld;
@@ -227,7 +228,7 @@ public:
                          (pos.z > table_scale.z / 2 + offset || pos.z < - (table_scale.z / 2 + offset)) ||
                          pos.y < -offset) {
                         // fly out of the boundary
-                        std::cout<< "Out of boundry" << std::endl;
+                        std::cout<< "Out of boundary" << std::endl;
                         _ball.set_status(FlyingStatus::OUT_OF_BOUND);
                         if (_numHitTable == 0 || (_numHitTable == 1 && _isServingTurn)) {
                             _endCurrentTurn(false);
@@ -251,7 +252,9 @@ public:
         ball.set_pose(pose);
         ball.set_status(_ball.get_status());
 
-        board = _board;
+        board.set_player_1_score(_board.get_player_1_score());
+        board.set_player_2_score(_board.get_player_2_score());
+        board.set_maximum_score(_board.get_maximum_score());
 
         isTurnOwner = _isTurnOwner;
     }

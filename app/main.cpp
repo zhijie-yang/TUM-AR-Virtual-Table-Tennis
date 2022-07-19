@@ -62,7 +62,7 @@ int main(int, char **) {
 		// connect to the server after the client instance has been created
 		if (g_tennis_client && !g_tennis_client->is_connected()) {
 			ClientConnectionResponse connection_res = g_tennis_client->connectServer();
-			std::cout << connection_res.get_detail() << std::endl;
+//			std::cout << connection_res.get_detail() << std::endl;
 			if (connection_res.get_result()) {
 				g_player_info = new PlayerInfo(connection_res.get_player_info());
 			}
@@ -137,8 +137,10 @@ int main(int, char **) {
 				tennis.simulation_serialize(bs, sb, is_turn_owner);
 				// TODO when to change turn owner?
 				// consider not only hit with racket
-				if (bs.get_status() == FlyingStatus::HIT_WITH_RACKET) {
+				if (bs.get_status() == FlyingStatus::HIT_WITH_RACKET || (is_turn_owner != isCurrentTurnOwner)) {
+                    std::cout << "Turn Owner update" << std::endl;
 					g_tennis_client->changeTurn();
+
 				}
 				g_tennis_client->onTennisTickEnd(bs, sb, is_turn_owner);
 			}

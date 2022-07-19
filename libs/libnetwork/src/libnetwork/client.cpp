@@ -221,9 +221,9 @@ bool VirtualTennisNetworkClient::onTennisTickEnd(BallStatus& ball_status,
                     bool status = true;
                     status &= sendBallStatus(ball_status).get_result();
                     status &= sendScoreBoard(score_board).get_result();
-                    if (change_turn) {
-                        status &= changeTurn().get_result();
-                    }
+//                    if (change_turn) {
+//                        status &= changeTurn().get_result();
+//                    }
                     return status;
 }
 
