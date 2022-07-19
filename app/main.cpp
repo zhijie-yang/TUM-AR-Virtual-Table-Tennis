@@ -124,7 +124,10 @@ int main(int, char **) {
 
 			if (g_tennis_client && g_tennis_client->is_connected()) {
                 bool isCurrentTurnOwner = g_tennis_client->getCurrentTurn();
+                std::cout << isCurrentTurnOwner << std::endl;
+                ScoreBoard scoreBoard = g_tennis_client->getScoreBoard();
                 tennis.turnOwner_deserialize(isCurrentTurnOwner);
+                tennis.score_board_deserialize(scoreBoard);
 
                 if (tennis.run_tick()) {
                     cerr << "Failed to run tick tennis.\n";
@@ -139,6 +142,8 @@ int main(int, char **) {
 				// consider not only hit with racket
 				if (bs.get_status() == FlyingStatus::HIT_WITH_RACKET || (is_turn_owner != isCurrentTurnOwner)) {
                     std::cout << "Turn Owner update" << std::endl;
+                    std::cout << sb.get_player_2_score() << std::endl;
+                    std::cout << sb.get_player_1_score() << std::endl;
 					g_tennis_client->changeTurn();
 
 				}

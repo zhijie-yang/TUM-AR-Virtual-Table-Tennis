@@ -79,9 +79,8 @@ private:
 
             // TODO: redirect to main scene
             _gameEnd = true;
-        } else {
-            return;
         }
+        return;
     }
     // scaling the models for collision detection
     glm::mat4 _obj2World(glm::mat4 model, int objClass) {
@@ -146,6 +145,16 @@ public:
             }
 
             glm::mat4 racket2World = _obj2World(_racket1Model, 0);
+            if (!_isTurnOwner) {
+                glm::mat4 inverse_model = glm::mat4(
+                        glm::vec4(-1, 0, 0, 0),
+                        glm::vec4(0, -1, 0 , 0),
+                        glm::vec4(0, 0, 1, 0),
+                        glm::vec4(0, 0, 0, 1)
+                ) * _racket1Model;
+                racket2World = _obj2World(inverse_model, 0);
+            }
+
             glm::mat4 table2World = _obj2World(_tableModel, 2);
             glm::mat4 net2World = _obj2World(_netModel, 3);
 
@@ -167,14 +176,24 @@ public:
                 // when the ball hit the enemy's racket,change turn owner.
                 std::cout << "Hit racket, change turn owner!" << std::endl;
                 _isTurnOwner = true;
+                _isServingTurn = false;
 
                 _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
                 glm::vec3 direction = ball_coll_racket.normalWorld;
                 _ball.set_velocity(glm::vec3(direction.x, direction.y, direction.z));
+
+                _ball.set_velocity(glm::vec3(-direction.x, -direction.y, direction.z));
+                glm::mat4 pose = _ball.get_pose().get_transform();
+                pose = glm::mat4(glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f),
+                                 glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+                                 glm::vec4(0.0f, 0.0f, -1.0f, 0.0f),
+                                 glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) * pose;
+                _ball.set_position(pose[3]);
+
             } else if (ball_coll_racket.isValid && _isTurnOwner && _ball.get_status() == FlyingStatus::WAITING_START) {
                 //serve the ball
                 std::cout << "Turn owner serve ball!" << std::endl;
-                _ball.set_status(FlyingStatus::HIT_WITH_RACKET);
+                _ball.set_status(FlyingStatus::FLYING);
                 _isServingTurn = true;
 
                 glm::vec3 direction = ball_coll_racket.normalWorld;
@@ -261,6 +280,16 @@ public:
 
     void turnOwner_deserialize(bool isTurnOwner) {
         _isTurnOwner = isTurnOwner;
+    }
+
+    void score_board_deserialize(ScoreBoard scoreBoard) {
+        if (_isTurnOwner) {
+            _board.set_player_1_score(scoreBoard.get_player_1_score());
+            _board.set_player_2_score(scoreBoard.get_player_2_score());
+        } else {
+            _board.set_player_2_score(scoreBoard.get_player_1_score());
+            _board.set_player_1_score(scoreBoard.get_player_2_score());
+        }
     }
 
     std::function<int(float*)> racket1_deserialize()
@@ -368,4 +397,8 @@ void tennis_manager::simulation_serialize(BallStatus &ball, ScoreBoard &board, b
 
 void tennis_manager::turnOwner_deserialize(bool isTurnOwner) {
     return _impl->turnOwner_deserialize(isTurnOwner);
+}
+
+void tennis_manager::score_board_deserialize(ScoreBoard scoreBoard) {
+    return _impl->score_board_deserialize(scoreBoard);
 }

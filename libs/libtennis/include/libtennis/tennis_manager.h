@@ -28,6 +28,7 @@ namespace libtennis {
 
         void simulation_serialize(BallStatus &ball, ScoreBoard &board, bool &isTurnOwner);
         void turnOwner_deserialize(bool isTurnOwner);
+        void score_board_deserialize(ScoreBoard scoreBoard);
 
     private:
         std::unique_ptr<impl> _impl;
